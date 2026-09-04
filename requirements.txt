@@ -1,0 +1,5 @@
+mss
+pywin32
+pytesseract
+pillow
+pydirectinput

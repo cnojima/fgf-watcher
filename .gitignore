@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+
+# Screenshots and OCR logs are regenerated locally by calibrate.py/tracker.py
+# and often contain live guild chat/usernames - not meant for version control.
+data/

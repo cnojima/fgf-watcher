@@ -1,0 +1,7 @@
+{
+  "window_title": "REPLACE ME (substring of the game's window title bar)",
+  "regions": {
+    "gold": {"box": [0, 0, 100, 30], "digits_only": true},
+    "health": {"box": [0, 40, 100, 70], "digits_only": true}
+  }
+}
