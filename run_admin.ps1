@@ -23,7 +23,12 @@ $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIden
 
 if (-not $isAdmin) {
     $argString = ($ScriptArgs | ForEach-Object { '"' + $_ + '"' }) -join ' '
-    Start-Process -FilePath $PythonExe -ArgumentList $argString -Verb RunAs -WorkingDirectory $ProjectDir -Wait
+    # -WindowStyle Hidden: python.exe is a console app, so without this Windows
+    # shows a visible console window for the elevated process - which can end
+    # up rendered on top of the game (it's a fresh window, topmost when it
+    # spawns) and intercept clicks/drags meant for the game underneath it.
+    # Confirmed by the user directly seeing the console overlapping the game.
+    Start-Process -FilePath $PythonExe -ArgumentList $argString -Verb RunAs -WorkingDirectory $ProjectDir -WindowStyle Hidden -Wait
 } else {
     Push-Location $ProjectDir
     & $PythonExe @ScriptArgs

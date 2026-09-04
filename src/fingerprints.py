@@ -29,7 +29,7 @@ FINGERPRINTS: dict[str, Fingerprint] = {
         (112, 240, (209, 197, 195)),  # inside "Trader Era" letter stroke
         (120, 235, (209, 199, 199)),
     ]),
-    "flagship": Fingerprint(points=[
+    "fleet_list": Fingerprint(points=[
         (1220, 40, (237, 241, 211)),  # inside "FLAGSHIP" title letter stroke
         (1210, 30, (75, 147, 132)),
     ]),

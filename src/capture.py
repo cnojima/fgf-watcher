@@ -74,7 +74,20 @@ def get_window_rect(hwnd: int) -> WindowRect:
 
 
 def screenshot_window(hwnd: int) -> Image.Image:
-    """Screenshot the client area of hwnd. Window must not be minimized, but can be occluded on some setups (results vary)."""
+    """Screenshot the client area of hwnd.
+
+    mss captures a screen *region* at hwnd's coordinates, not hwnd's content
+    directly - if another window is on top of that region (alt-tabbed away,
+    covered by a browser, etc.) this would silently capture the wrong thing.
+    So this refuses to shoot unless hwnd is actually the foreground window,
+    rather than return a screenshot of whatever's covering it.
+    """
+    if win32gui.GetForegroundWindow() != hwnd:
+        raise RuntimeError(
+            "Target window is not in the foreground (something else is covering it, "
+            "or it's minimized/alt-tabbed away) - bring it to front before capturing, "
+            "since a screenshot here would silently grab whatever's on top instead."
+        )
     rect = get_window_rect(hwnd)
     with mss.mss() as sct:
         monitor = {"left": rect.left, "top": rect.top, "width": rect.width, "height": rect.height}

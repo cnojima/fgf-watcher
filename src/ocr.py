@@ -22,8 +22,8 @@ def preprocess(image: Image.Image, upscale: int = 3, threshold: int | None = Non
     return gray
 
 
-def read_text(image: Image.Image, digits_only: bool = False, threshold: int | None = None) -> str:
-    processed = preprocess(image, threshold=threshold)
+def read_text(image: Image.Image, digits_only: bool = False, threshold: int | None = None, upscale: int = 3) -> str:
+    processed = preprocess(image, upscale=upscale, threshold=threshold)
     config = "--psm 7"  # treat region as a single line of text
     if digits_only:
         config += " -c tessedit_char_whitelist=0123456789,./%"
