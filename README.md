@@ -8,8 +8,11 @@ Built and tested against Python 3.12 + Tesseract 5.4 on Windows, targeting a win
 
 - Python 3.12: `C:\Users\cnoji\AppData\Local\Programs\Python\Python312\python.exe`
 - Tesseract OCR: `C:\Program Files\Tesseract-OCR\tesseract.exe` (path is hardcoded in `src/ocr.py`)
-- Python deps: `pip install -r requirements.txt` (includes EasyOCR, which pulls in torch —
-  large install, and its first use downloads model weights)
+- EasyOCR (`ocr_easy.py`): a heavier fallback engine for text Tesseract can't read even with
+  a correctly-sized box (see Known gotchas) — installed via `requirements.txt` below, pulls
+  in torch, and downloads its model weights on first use (needs network access that once).
+- Python deps: `pip install -r requirements.txt` (mss, pywin32, pytesseract, pillow,
+  pydirectinput, easyocr)
 
 **The game runs elevated (as Administrator).** Windows blocks synthetic input from a
 lower-integrity process to a higher-integrity window (UIPI), so any script that clicks or
@@ -71,10 +74,15 @@ scripts here don't try to.
    whenever that screen is showing.
 
 6. **Send input** (`src/input_control.py`) — building blocks only, not a full bot:
-   - `focus_window(hwnd)`, `click(hwnd, x, y)`, `press_key(hwnd, key)`
+   - `focus_window(hwnd)`, `click(hwnd, x, y)`, `press_key(hwnd, key)`, `drag(hwnd, x1, y1, x2, y2)`
    - Coordinates are relative to the window's client area, same frame as calibration.
    - Uses `pydirectinput` instead of `pyautogui` because many games only respond to
-     DirectInput-style synthetic input.
+     DirectInput-style synthetic input. `pydirectinput` has no `scroll()` at all (no
+     `MOUSEEVENTF_WHEEL` wrapper) - `drag()` is how every scrollable list here is scrolled,
+     as a mouse-down/move/hold-briefly/mouse-up touchscreen-style swipe. The brief hold
+     before release matters: releasing the instant the cursor stops reads as a flick and
+     the list keeps coasting on momentum afterward, making the actual scroll distance
+     inconsistent between calls.
    - Must run elevated (see above) — the game runs as Administrator.
 
 7. **Example feature: reading owned flagships** (`src/flagships.py`) — opens the fleet
@@ -84,13 +92,21 @@ scripts here don't try to.
 8. **Example feature: reading a ship's full stat breakdown** (`src/attribute_details.py`)
    — opens the "Attribute Details" modal and scrolls through its full, longer-than-one-
    screen table (HP/ATTACK/INT/DEF plus derived stats like Crit Rate and Damage Reduction,
-   each broken into modifier sub-rows). Scrolls by dragging (this game has no scroll wheel
-   support), stitches every capture into one seamless image aligned by actual pixel content
-   rather than merging OCR text across captures, OCRs the whole thing once, and
-   cross-validates + self-corrects each section's total against its own sub-row math via
+   each broken into modifier sub-rows). Scrolls with `drag()`, stitches every capture into
+   one seamless image aligned by actual pixel content (`_content_offset`) rather than
+   merging OCR text across captures, OCRs the whole thing once, and cross-validates +
+   self-corrects each section's total against its own sub-row math via
    `validate_sections()`/`heal_totals()`. See CLAUDE.md for the full story of why this
    module looks the way it does - getting a reliable scrollable-list reader working took
    many iterations and each one taught something worth not re-learning.
+
+9. **Example feature: collecting every owned flagship's full stats**
+   (`src/collect_all_flagships.py`) — opens the fleet list, pages through all 1-4 owned
+   ships (left/right arrows within the ship detail view, not by re-entering the list and
+   clicking a card each time - see the module docstring for why that approach was tried
+   and abandoned), runs `attribute_details.read_attribute_details()` on each one, and
+   writes `data/attributes/{ship name}.json` (`{"ship", "attributes", "validation"}`) per
+   ship. Run directly: `powershell -File run_admin.ps1 src\collect_all_flagships.py`.
 
 ## Known gotchas (found while testing against a live game)
 
@@ -130,6 +146,41 @@ scripts here don't try to.
   returns coordinates in a virtualized logical-pixel space that doesn't match the physical
   pixels `mss`/`SetCursorPos` use on a scaled display — silently misaligning every
   screenshot and click by the scale factor (e.g. 1.25x at 125% scaling).
+- **A label can legitimately appear twice under one section** — e.g. `attribute_details.py`
+  found ATK/DEF/INT each list "Components" once as a raw base value (e.g. `11,309`) and
+  again as a separate bonus percentage (e.g. `20.00%`, confirmed against the game directly
+  by the user: it's a "complete set" bonus). Keying a row store on label alone silently
+  drops one; key on `(label, is_percentage)` instead so both survive.
+- **When comparing pixels between two scrolled captures to measure scroll distance, exclude
+  any static UI chrome from the compared strip.** A strip that included the modal's fixed
+  "Overview/Details" tab bar always scored a perfect match at offset 0 no matter how far the
+  actual list content had moved, since that chrome never changes - making the scroll
+  mechanism look completely broken when it was working fine. Sample the comparison strip
+  from below any fixed header/tab-bar region.
+- **A parsing regex that requires an entire line to be clean fails completely on one stray
+  OCR character, not partially.** `"ATTACK 23,725"` misread as `"ATTACK 23,/25"` (a "7"
+  swapped for a symbol) made a strict end-anchored pattern reject the *whole line* -
+  silently dropping a section header and misattributing all its sub-rows to whichever
+  section was previously active. Match the value as the first plausible number token and
+  ignore what follows, rather than requiring the rest of the line to be digit-free.
+- **When a field is redundantly determined by others, use that redundancy to correct OCR
+  errors, not just detect them.** A section's total is a known function of its own
+  sub-rows (see `validate_sections`'s docstring for the formula, confirmed against the
+  game's real numbers). `heal_totals` replaces a total that fails validation with the
+  value computed from its sub-rows, and marks the section `"_total_healed": "true"` so
+  a caller can still tell the original OCR'd number didn't match.
+- **The elevated console window can render on top of the game and eat clicks meant for
+  it**, with no error raised (the game was still technically the foreground window).
+  `run_admin.ps1` launches the elevated Python process with `-WindowStyle Hidden` to
+  prevent this - `python.exe` is a console app, so without it Windows shows a visible,
+  topmost-when-it-spawns console window for the elevated process.
+- **Re-entering a list screen and clicking a specific card's position is less reliable than
+  it looks.** Selecting flagships by returning to the fleet list and clicking each card in
+  turn needed a manual pixel correction on one card, and separately re-clicking a card
+  position twice both times reopened a ship already seen instead of a new one (never fully
+  root-caused - possibly a "last selected" sticky-highlight state). `collect_all_flagships.py`
+  avoids this entirely by staying in the ship detail view and paging with the left/right
+  arrows instead of returning to the list between ships.
 
 ## Next steps to consider
 
@@ -147,3 +198,7 @@ scripts here don't try to.
 - Only 2 of ~7 catalogued screens (`system_map`, `fleet_list`) have pixel fingerprints in
   `fingerprints.py`. `storage`, `champion`, `guild`, `radiant`, `chat`, and `city_view` are
   wired into `nav.py`'s key mappings but `goto()` can't verify arrival for them yet.
+- `collect_all_flagships.py` occasionally captures 11 of a ship's 12 stat sections instead
+  of 12 - the twelfth ("Chance to inflict Major Damage") sometimes only gets its `_total`
+  without sub-rows on a given run. Not corrupted data, just incomplete for that one field;
+  a retry-on-incomplete-section pass would close this gap if it matters for a given use.
