@@ -2,9 +2,9 @@
 so you can read off pixel boxes for regions.json by eye.
 
 Usage:
-    python src/calibrate.py list                        # show all window titles
-    python src/calibrate.py shot "window title"          # save gridded screenshot to data/
-    python src/calibrate.py zoom X Y [radius] [source]   # zoom into (X,Y) from a prior shot
+    python src/calibrate.py list                            # show all window titles
+    python src/calibrate.py shot "window title" [delay]      # save gridded screenshot to data/
+    python src/calibrate.py zoom X Y [radius] [source]       # zoom into (X,Y) from a prior shot
 
 IMPORTANT: reading coordinates by eye off the full screenshot (especially after
 it gets downscaled for viewing) is error-prone — text near where you *think* a
@@ -12,8 +12,15 @@ UI element is often turns out to be blank space once you zoom in, because a
 few percent of visual misjudgment on a 2000+px-wide image is a lot of real
 pixels. Always confirm a coordinate with `zoom` before clicking it, rather than
 eyeballing the full shot.
+
+`shot` waits `delay` seconds (default 3) before capturing. screenshot_window()
+refuses to capture unless the game is the foreground window, but running this
+command from a terminal makes the *terminal* the foreground window the instant
+it launches - the delay is time to alt-tab back to the game before the actual
+capture happens, so this never needs to steal focus from whatever's on screen.
 """
 import sys
+import time
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -83,9 +90,12 @@ if __name__ == "__main__":
             print(title)
     elif sys.argv[1] == "shot":
         if len(sys.argv) < 3:
-            print("Usage: python src/calibrate.py shot \"window title substring\"")
+            print("Usage: python src/calibrate.py shot \"window title substring\" [delay]")
             sys.exit(1)
+        delay = int(sys.argv[3]) if len(sys.argv) > 3 else 3
         hwnd = find_window(sys.argv[2])
+        print(f"Capturing in {delay}s - switch focus to the game window now...")
+        time.sleep(delay)
         raw = screenshot_window(hwnd).convert("RGB")
         DATA_DIR.mkdir(exist_ok=True)
         raw.save(DATA_DIR / "calibration_raw.png")

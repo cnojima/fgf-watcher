@@ -36,12 +36,35 @@ wasted effort during development — wrong clicks, empty crops, misjudged coordi
 100-400px more than once, including guessing "roughly the same spot" between two different
 screens that turned out to differ by hundreds of pixels.
 
+- **A whole batch of `component_details.py`'s boxes were once derived from a stale
+  reference image** — `calibrate.py zoom` was run against an old `calibration_raw.png`
+  without first confirming a fresh `shot` had actually been taken against the current
+  screen. Every box came out wrong by 150-450px, in a way that looked like ordinary
+  miscalibration error rather than "wrong source image entirely" until the pixel values
+  were compared directly against a genuinely fresh shot. Confirm the screenshot you're
+  about to `zoom` into is actually current, not just present.
+- **`calibrate.py shot` needs the game to be the foreground window at the moment it
+  captures, but running it from a terminal makes the terminal foreground instead** — this
+  isn't a bug to work around, it's `screenshot_window()`'s own foreground check (see
+  "Other load-bearing fixes" below) doing its job. `shot` now takes an optional `[delay]`
+  (default 3s) and prints a countdown before capturing, so there's a window to alt-tab back
+  to the game first. `zoom` never touches the live game (it only re-crops the already-saved
+  `calibration_raw.png`), so it never needed this and can be run anytime after a `shot`.
+
 ## This game runs elevated (Administrator)
 
 Windows blocks synthetic input from a lower-integrity process to a higher-integrity window
 (UIPI). Any script that calls `click()`/`press_key()` must run via `run_admin.ps1`
 (triggers one UAC prompt per invocation — there's no way around that, don't try). Pure
 screenshotting/OCR does not need elevation.
+
+**Disabling Windows' UAC consent prompts does not remove this requirement — it only
+removes the dialog.** With prompts disabled system-wide, `run_admin.ps1`'s elevation
+request goes through silently, but a plain, non-elevated `python.exe` invocation still
+cannot reach the (elevated) game at all — confirmed directly (`IsInRole(Administrator)`
+came back `False` for it, and its clicks/keys silently didn't land, no error raised).
+Every script that clicks or presses keys still needs to actually run from an elevated
+process, UAC prompt or not.
 
 ## Scrolling and merging multi-capture data: lessons from `attribute_details.py`
 
@@ -87,6 +110,66 @@ to get right. In rough order of what actually mattered:
   truncating it), `heal_totals` replaces the total with the value computed from the
   sub-rows rather than leaving the known-wrong OCR'd number in place - confirmed correct by
   cross-checking the healed value against a direct screenshot of the real total twice.
+
+## Paging between ships: lessons from `collect_all_flagships.py`
+
+- **Paging with the side arrows does not reset which tab is active.** Whichever of
+  Overview/Component/Promote was showing for the previous ship is still showing after
+  arrow-paging to the next one. Confirmed live — assumed otherwise at first, which caused
+  a real navigation bug (reading the wrong tab's content for ship 2 onward, since only
+  ship 1 was freshly opened from the fleet list and actually started on Overview). Fixed
+  by explicitly clicking the target tab at the start of every per-ship read rather than
+  assuming a starting state.
+- **`back()` closes one level, but "one level" depends on which sub-view you're actually
+  in — don't assume a fixed depth without confirming from the specific state you're
+  leaving.** From a component's *detail* view (opened by clicking one of the 5 equipped-
+  component icons), one `back()` lands on the Component tab's own grid-of-5-icons view —
+  not Overview, not the fleet list. This was corrected mid-session: it was first reported
+  as needing two `back()` calls, then corrected to one once the actual landing screen
+  (the grid, not the fleet list) was identified directly.
+- **This game's "locked but still viewable" UI metaphor shows up repeatedly — check for a
+  presence/absence signal specific to that pattern before assuming an empty read means "not
+  real."** A locked/not-yet-unlocked ship slot renders a full Overview tab (ship model,
+  stat panel) but *without* the "Level NN" badge an unlocked ship gets — confirmed directly
+  by the user, who named this as the general pattern behind multiple parts of this UI, not
+  a one-off. Checking for that badge's presence is both more correct and far cheaper than
+  detecting a locked slot by noticing `read_attribute_details()` came back empty, which
+  wastes a full scroll-and-OCR pass on every locked slot before finding out.
+- **A short badge can need a different PSM mode than the multi-line stat blocks elsewhere
+  in this codebase.** The "Level NN" badge above came back empty under `--psm 6` (this
+  codebase's usual default) every time, despite the crop being visibly correct; `--psm 11`
+  (sparse text) read it reliably. Even at 11, the word "Level" itself still didn't
+  reliably come through — only the digits did, which was enough for a presence check. If a
+  correctly-cropped short/isolated piece of text reads empty, try a different PSM before
+  assuming the crop is wrong (see "capture evidence before tuning anything" above — this
+  is the one case so far where the fix genuinely was a preprocessing/engine setting, not
+  the crop).
+
+## One screen can have two structurally different layouts: lessons from `promotion_details.py`
+
+The Promote tab's current-level badge is calibrated against a *fixed box* — this works for
+a ship that can still be promoted (levels 0-5), but completely breaks for a maxed ship
+(level 6), because the maxed layout drops an entire "current → next" progress row that a
+non-maxed ship shows above the badge. Removing that row shifts everything below it —
+*including the badge itself* — to a different position. A box confirmed correct against a
+level-0 or level-I ship simply doesn't contain the badge at all once a ship is maxed.
+
+This was not an OCR problem (no misread, no wrong PSM) — it was "the icon isn't in this box
+on this screen," which looks identical to an OCR failure (empty string back) until you
+actually compare full screenshots of both layouts side by side. Confirmed by capturing real
+reference screenshots of a level-0 ship, a level-I ship, and a maxed ship, rather than
+assuming a box calibrated on one ship's Promote tab generalizes to every ship's.
+
+**The fix: find a different element that's confirmed to occupy the same position in both
+layouts, and read that instead for the distinction the moved element could no longer
+make.** Here, the PROMOTE/PROMOTED button sits in the same place whether a ship is maxed or
+not (only its text and enabled/disabled styling change) — so `read_promotion_level()` reads
+the numeral badge first (covers levels 0-5), and only falls back to OCRing the button text
+("PROMOTED" vs "PROMOTE") to tell level 0 apart from level 6, since the badge alone can't
+make that distinction once it's moved out from under a fixed box. More generally: before
+assuming a badge/box calibrated on one state of a screen also applies to a visually or
+functionally distinct state of the *same* screen (not-maxed vs. maxed, locked vs. unlocked,
+etc.), get a real reference screenshot of that other state first.
 
 ## Other load-bearing fixes already in place — don't undo them
 

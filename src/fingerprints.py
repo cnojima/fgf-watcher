@@ -33,6 +33,10 @@ FINGERPRINTS: dict[str, Fingerprint] = {
         (1220, 40, (237, 241, 211)),  # inside "FLAGSHIP" title letter stroke
         (1210, 30, (75, 147, 132)),
     ]),
+    "city_view": Fingerprint(points=[
+        (65, 730, (119, 129, 144)),  # base-interior floor/wall panel color, top-left icon column
+        (65, 815, (120, 129, 144)),
+    ]),
 }
 
 
