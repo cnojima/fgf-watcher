@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from capture import find_window, screenshot_region
+from display_profiles import ProfileKey, select_profile
 from ocr import read_text
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -23,10 +24,18 @@ def load_config(path: str) -> dict:
         return json.load(f)
 
 
+def _load_region_profiles(config: dict) -> dict[ProfileKey, dict]:
+    profiles: dict[ProfileKey, dict] = {}
+    for p in config["profiles"]:
+        size = tuple(p["window_size"]) if p.get("window_size") else (0, 0)
+        profiles[(p["platform"], size)] = p["regions"]
+    return profiles
+
+
 def poll_loop(config_path: str, interval_seconds: float = 2.0) -> None:
     config = load_config(config_path)
     hwnd = find_window(config["window_title"])
-    regions = config["regions"]
+    regions = select_profile(hwnd, _load_region_profiles(config), "regions")
 
     DATA_DIR.mkdir(exist_ok=True)
     log_path = DATA_DIR / "log.csv"

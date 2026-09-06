@@ -21,19 +21,21 @@ from fingerprints import current_screen
 from input_control import click
 from nav import goto, back
 from attribute_details import read_attribute_details, validate_sections
-from flagships import FIRST_CARD_CLICK, RIGHT_ARROW, NAME_BOX, MAX_SHIPS
+from flagships import MAX_SHIPS
+from ui_layout import get_layout
 import ocr_easy
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "attributes"
-ATTRIBUTE_CLOSE_BUTTON = (1275, 230)  # X button on the Attribute Details modal
 
 
-def _read_ship_name(hwnd) -> str:
-    img = screenshot_region(hwnd, NAME_BOX)
+def _read_ship_name(hwnd, layout) -> str:
+    img = screenshot_region(hwnd, layout.name_box)
     return ocr_easy.read_text(img)
 
 
 def collect_all_flagships(hwnd) -> dict[str, dict]:
+    layout = get_layout(hwnd)
+
     # goto() for a base view refuses if an overlay is currently open (it only
     # knows how to toggle system_map/city_view, not close an arbitrary
     # overlay on top of one) - close whatever might already be open first so
@@ -57,21 +59,21 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
 
     goto(hwnd, "system_map")
     goto(hwnd, "fleet_list")
-    click(hwnd, *FIRST_CARD_CLICK)
+    click(hwnd, *layout.first_card_click)
     time.sleep(0.6)
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     results: dict[str, dict] = {}
 
     for _ in range(MAX_SHIPS):
-        name = _read_ship_name(hwnd)
+        name = _read_ship_name(hwnd, layout)
         if not name:
             # The detail view's entrance animation may not have finished
             # rendering the name yet - confirmed on a live run where a real
             # ship's name came back empty right after arriving. One retry
             # after a bit more time is enough.
             time.sleep(0.5)
-            name = _read_ship_name(hwnd)
+            name = _read_ship_name(hwnd, layout)
 
         if not name or name in results:
             break  # wrapped back around to a ship we've already seen
@@ -84,9 +86,9 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump({"ship": name, "attributes": data, "validation": validation}, f, indent=2)
 
-        click(hwnd, *ATTRIBUTE_CLOSE_BUTTON)  # close the attribute overlay
+        click(hwnd, *layout.attribute_close_button)  # close the attribute overlay
         time.sleep(0.6)
-        click(hwnd, *RIGHT_ARROW)  # page to the next ship, still in detail view
+        click(hwnd, *layout.right_arrow)  # page to the next ship, still in detail view
         time.sleep(0.6)
 
     back(hwnd)  # close the ship detail view, back to the fleet list
@@ -94,6 +96,9 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
 
 
 if __name__ == "__main__":
-    hwnd = find_window("Foundation Galactic Frontier")
+    # "Foundation Galactic Frontier" (no colon) doesn't substring-match the
+    # game's real window title "Foundation: Galactic Frontier" - confirmed
+    # live via capture.list_windows(), not a guess.
+    hwnd = find_window("Galactic Frontier")
     collected = collect_all_flagships(hwnd)
     print(f"Collected {len(collected)} ship(s): {list(collected)}")

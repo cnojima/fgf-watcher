@@ -18,7 +18,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from capture import find_window, list_windows, screenshot_window
+from capture import describe_display_scale, find_window, get_window_rect, list_windows, screenshot_window
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -92,6 +92,9 @@ if __name__ == "__main__":
         gridded = raw.copy()
         _draw_grid(gridded, 50)
         gridded.save(DATA_DIR / "calibration.png")
+        rect = get_window_rect(hwnd)
+        print(f"Profile key for this window: ({sys.platform!r}, ({rect.width}, {rect.height}))")
+        print(describe_display_scale(hwnd))
         print(f"Saved {DATA_DIR / 'calibration.png'}")
         print("Open it and read off approximate pixel coordinates (red gridlines every 50px), "
               "then run `zoom X Y` to confirm before clicking anything.")

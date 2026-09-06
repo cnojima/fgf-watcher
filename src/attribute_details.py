@@ -43,30 +43,8 @@ from PIL import Image
 from capture import screenshot_region
 from input_control import click, drag
 from ocr import preprocess, pytesseract
+from ui_layout import get_layout
 
-HAMBURGER_ICON = (1645, 1385)  # on the ship detail view (Overview tab)
-DETAILS_TAB = (1475, 410)
-# Bottom was originally 1060, then 1150 - both times widened by eyeballing
-# position on the full downscaled screenshot, and both times still wrong: at
-# the list's true max-scroll rest position the last section's content
-# ("Chance to inflict Major Damage" + its Level/Technology sub-rows) actually
-# extends to y=1290, with the modal's own visible border at y=1335. 1150 was
-# cutting off "Level"/"Technology" entirely, not just trimming their margin.
-# This value came from zoom.py's 10px grid against calibration_raw.png, not
-# another eyeball guess - see CLAUDE.md on why that distinction matters here.
-TABLE_BOX = (650, 350, 1650, 1330)
-# Drag from a lower point to a higher one to scroll the list down (touch-style
-# swipe-up), both inside the table area and away from row edges/the header row.
-# The exact distance matters much less now than it did before image
-# stitching: _content_offset() measures how far the content actually moved
-# from real pixels rather than trusting this number, so it only needs to be
-# a reasonable seed for that search (see EXPECTED_SCROLL_OFFSET) - it no
-# longer has to simultaneously satisfy "enough overlap for OCR redundancy"
-# and "not so much overlap that stale content resurfaces," since there's no
-# cross-capture text merging left for that tradeoff to apply to.
-DRAG_FROM = (1000, 900)
-DRAG_TO = (1000, 550)
-EXPECTED_SCROLL_OFFSET = DRAG_FROM[1] - DRAG_TO[1]
 MAX_SCROLLS = 45  # smaller per-drag distance means more scrolls needed to reach the bottom
 
 # Every sub-row label seen so far across HP/ATTACK/INT/DEF/Damage Reduction/
@@ -268,11 +246,8 @@ def heal_totals(data: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
     return data
 
 
-STRIP_Y = 180  # skip past the static "Overview/Details" tab bar at the top of TABLE_BOX
-
-
-def _content_offset(prev_img: Image.Image, curr_img: Image.Image,
-                     expected: int = EXPECTED_SCROLL_OFFSET, margin: int = 150) -> int:
+def _content_offset(prev_img: Image.Image, curr_img: Image.Image, table_tab_bar_height: int,
+                     expected: int, margin: int = 150) -> int:
     """How far curr_img's content has scrolled down relative to prev_img, in
     pixels - found by matching actual pixel content (a thin strip against a
     sliding window of prev_img) rather than trusting the drag gesture
@@ -281,9 +256,9 @@ def _content_offset(prev_img: Image.Image, curr_img: Image.Image,
     rather than the whole image, since the true answer is always close to
     it - a full search isn't needed and is slower.
 
-    The strip is sampled starting at STRIP_Y, not the very top of the crop:
-    TABLE_BOX's top ~150px is the "Overview/Details" tab bar, which is fixed
-    UI chrome that never scrolls - comparing that against itself always
+    The strip is sampled starting at table_tab_bar_height, not the very top of
+    the crop: the top of the table capture region is the "Overview/Details"
+    tab bar, which is fixed UI chrome that never scrolls - comparing that against itself always
     scored a perfect match at offset=0 regardless of how far the actual list
     content below it had moved, making this function report "no movement"
     on every call even when the list had clearly scrolled several sections
@@ -291,7 +266,7 @@ def _content_offset(prev_img: Image.Image, curr_img: Image.Image,
     prev = np.asarray(prev_img.convert("L"), dtype=np.int32)
     curr = np.asarray(curr_img.convert("L"), dtype=np.int32)
     strip_h = 80
-    curr_strip = curr[STRIP_Y:STRIP_Y + strip_h, :]
+    curr_strip = curr[table_tab_bar_height:table_tab_bar_height + strip_h, :]
 
     # Always search from 0, not expected-margin: at the true scroll-bottom
     # the frames are identical and the real answer is 0, which a window
@@ -300,30 +275,31 @@ def _content_offset(prev_img: Image.Image, curr_img: Image.Image,
     # the way to MAX_SCROLLS, produced a 17,000px-tall composite Tesseract
     # then refused to process at all).
     lo = 0
-    hi = min(prev.shape[0] - STRIP_Y - strip_h, expected + margin)
+    hi = min(prev.shape[0] - table_tab_bar_height - strip_h, expected + margin)
     best_offset, best_score = expected, None
     for offset in range(lo, hi + 1):
-        score = np.sum((prev[STRIP_Y + offset:STRIP_Y + offset + strip_h, :] - curr_strip) ** 2)
+        start = table_tab_bar_height + offset
+        score = np.sum((prev[start:start + strip_h, :] - curr_strip) ** 2)
         if best_score is None or score < best_score:
             best_score = score
             best_offset = offset
     return best_offset
 
 
-def _stitch_full_table(hwnd) -> Image.Image:
+def _stitch_full_table(hwnd, layout) -> Image.Image:
     """Scrolls through the whole list, splicing only the genuinely new bottom
     slice of each capture (per _content_offset) onto one growing composite
     image, so the whole table ends up as a single seamless image with each
     row appearing exactly once - no OCR text merging step needed at all."""
-    frame = screenshot_region(hwnd, TABLE_BOX)
+    frame = screenshot_region(hwnd, layout.table_box)
     parts = [frame]
 
     stalls = 0
     for _ in range(MAX_SCROLLS):
-        drag(hwnd, *DRAG_FROM, *DRAG_TO)
+        drag(hwnd, *layout.drag_from, *layout.drag_to)
         time.sleep(0.7)  # let scroll momentum/animation fully settle before capturing
-        next_frame = screenshot_region(hwnd, TABLE_BOX)
-        offset = _content_offset(frame, next_frame)
+        next_frame = screenshot_region(hwnd, layout.table_box)
+        offset = _content_offset(frame, next_frame, layout.table_tab_bar_height, layout.expected_scroll_offset)
         if offset <= 5:
             stalls += 1
             # Same reasoning as the old text-based stall check: one
@@ -345,12 +321,13 @@ def _stitch_full_table(hwnd) -> Image.Image:
 
 
 def read_attribute_details(hwnd) -> dict[str, dict[str, str]]:
-    click(hwnd, *HAMBURGER_ICON)
+    layout = get_layout(hwnd)
+    click(hwnd, *layout.hamburger_icon)
     time.sleep(0.6)
-    click(hwnd, *DETAILS_TAB)
+    click(hwnd, *layout.details_tab)
     time.sleep(0.6)
 
-    composite = _stitch_full_table(hwnd)
+    composite = _stitch_full_table(hwnd, layout)
     text = pytesseract.image_to_string(preprocess(composite, upscale=2), config="--psm 6").strip()
 
     data: dict[str, dict[str, str]] = {}

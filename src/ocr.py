@@ -1,9 +1,14 @@
 """Preprocess a cropped screenshot region and OCR it."""
+import shutil
+
 import pytesseract
 from PIL import Image, ImageOps
 
-# UB-Mannheim installer default path; adjust if Tesseract was installed elsewhere.
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# Prefer whatever's on PATH (e.g. a Homebrew install on macOS) and only fall
+# back to the UB-Mannheim installer's Windows default if tesseract isn't
+# found there - keeps existing Windows setups working unchanged.
+_tesseract_path = shutil.which("tesseract") or r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = _tesseract_path
 
 
 def preprocess(image: Image.Image, upscale: int = 3, threshold: int | None = None) -> Image.Image:
