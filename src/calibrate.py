@@ -12,6 +12,13 @@ UI element is often turns out to be blank space once you zoom in, because a
 few percent of visual misjudgment on a 2000+px-wide image is a lot of real
 pixels. Always confirm a coordinate with `zoom` before clicking it, rather than
 eyeballing the full shot.
+
+`shot` brings the game window to the foreground itself (via focus_window())
+before capturing, since screenshot_window() refuses otherwise. On Windows this
+means `shot` now goes through the same SetForegroundWindow path as click()/
+press_key() - if the game's elevated (as Administrator) and this needs
+elevation too where it didn't before, run it via run_admin.ps1 like any other
+input-driving script. Not yet confirmed live on Windows.
 """
 import sys
 from pathlib import Path
@@ -19,6 +26,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from capture import describe_display_scale, find_window, get_window_rect, list_windows, screenshot_window
+from input_control import focus_window
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -36,6 +44,7 @@ def _draw_grid(img: Image.Image, step: int) -> Image.Image:
 
 def save_gridded_screenshot(title_substring: str, grid_step: int = 50) -> Path:
     hwnd = find_window(title_substring)
+    focus_window(hwnd)  # screenshot_window refuses unless hwnd is frontmost
     img = screenshot_window(hwnd).convert("RGB")
     _draw_grid(img, grid_step)
 
@@ -86,6 +95,7 @@ if __name__ == "__main__":
             print("Usage: python src/calibrate.py shot \"window title substring\"")
             sys.exit(1)
         hwnd = find_window(sys.argv[2])
+        focus_window(hwnd)  # screenshot_window refuses unless hwnd is frontmost
         raw = screenshot_window(hwnd).convert("RGB")
         DATA_DIR.mkdir(exist_ok=True)
         raw.save(DATA_DIR / "calibration_raw.png")

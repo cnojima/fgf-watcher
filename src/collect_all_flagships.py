@@ -17,12 +17,12 @@ import time
 from pathlib import Path
 
 from capture import find_window, screenshot_region
-from fingerprints import current_screen
-from input_control import click
+from profiles.fingerprints import current_screen
+from input_control import click, focus_window
 from nav import goto, back
 from attribute_details import read_attribute_details, validate_sections
 from flagships import MAX_SHIPS
-from ui_layout import get_layout
+from profiles.ui_layout import get_layout
 import ocr_easy
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "attributes"
@@ -35,6 +35,13 @@ def _read_ship_name(hwnd, layout) -> str:
 
 def collect_all_flagships(hwnd) -> dict[str, dict]:
     layout = get_layout(hwnd)
+
+    # screenshot_window() (used by current_screen() below, and transitively by
+    # goto()) refuses to capture unless hwnd is already the foreground window -
+    # click()/press_key() focus it themselves before acting, but the very
+    # first thing this function does is a current_screen() check with no
+    # click/press before it, so focus explicitly here first.
+    focus_window(hwnd)
 
     # goto() for a base view refuses if an overlay is currently open (it only
     # knows how to toggle system_map/city_view, not close an arbitrary

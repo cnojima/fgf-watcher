@@ -8,7 +8,7 @@ import time
 from capture import screenshot_region
 from input_control import click
 from nav import back, goto
-from ui_layout import get_layout
+from profiles.ui_layout import get_layout
 import ocr_easy
 
 MAX_SHIPS = 4

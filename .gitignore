@@ -5,3 +5,5 @@ __pycache__/
 # and often contain live guild chat/usernames - not meant for version control.
 data/
 .venv/
+tmp/
+.DS_Store

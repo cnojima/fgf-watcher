@@ -43,6 +43,24 @@ _FINGERPRINT_PROFILES: dict[ProfileKey, dict[str, Fingerprint]] = {
             (1210, 30, (75, 147, 132)),
         ]),
     },
+    ("darwin", (1280, 828)): {
+        # Confirmed via calibrate.py zoom + direct pixel sampling of
+        # data/calibration_raw.png (not eyeballed) - both points sampled
+        # solid across multiple adjacent rows, inside the "T"/"r" stems of
+        # "Trader Era", not on an anti-aliased edge.
+        "system_map": Fingerprint(points=[
+            (43, 153, (100, 65, 68)),  # inside "T" stem of "Trader"
+            (49, 154, (87, 50, 53)),  # inside "r" stem of "Trader"
+        ]),
+        # Confirmed via calibrate.py zoom + direct pixel sampling of
+        # data/calibration_raw.png (not eyeballed) - both points sampled
+        # solid across multiple adjacent rows/columns, inside the "FLAGSHIP"
+        # title's "F" outline stroke and "L" fill, not on an anti-aliased edge.
+        "fleet_list": Fingerprint(points=[
+            (607, 55, (75, 147, 131)),  # inside "F" outline stroke of "FLAGSHIP"
+            (631, 55, (237, 241, 211)),  # inside "L" fill of "FLAGSHIP"
+        ]),
+    },
     # Add a ("darwin", (width, height)): {...} entry per Mac window size calibrated.
 }
 

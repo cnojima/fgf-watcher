@@ -124,7 +124,7 @@ below.
      and per a known game bug it can also trigger a full quit from certain overlays instead
      of closing just that overlay — unsafe as a generic back/reset action.
 
-5. **Detect which screen is showing** (`src/fingerprints.py`) — pixel-color fingerprints,
+5. **Detect which screen is showing** (`src/profiles/fingerprints.py`) — pixel-color fingerprints,
    not OCR. Several UI elements here (the "FLAGSHIP" title, "Trader Era") use a decorative
    font or sit over a watermark graphic that defeats text recognition entirely, but a single
    pixel inside a known letter stroke or background patch is reliably the same color
@@ -171,8 +171,8 @@ below.
 
 ## Adding a display profile
 
-Every module holding calibrated pixel data — `src/fingerprints.py` (screen detection),
-`src/ui_layout.py` (every click/box/drag coordinate used by `nav.py`/`flagships.py`/
+Every module holding calibrated pixel data — `src/profiles/fingerprints.py` (screen detection),
+`src/profiles/ui_layout.py` (every click/box/drag coordinate used by `nav.py`/`flagships.py`/
 `attribute_details.py`/`collect_all_flagships.py`), and `config/regions.json`'s
 `profiles` array — is keyed by `(platform, exact window content size in pixels)` via
 `src/display_profiles.py`. To add a new one (a different machine, monitor, DPI scaling,
@@ -183,8 +183,9 @@ or a second platform):
    display-scale diagnostic (DPI% on Windows, backing scale + "looks like" resolution on
    macOS) for your own reference.
 2. Calibrate coordinates the normal way (`calibrate.py zoom`, never eyeballed — see below).
-3. Add a new dict entry keyed by that exact tuple to `_LAYOUT_PROFILES` in `ui_layout.py`,
-   `_FINGERPRINT_PROFILES` in `fingerprints.py`, and a new object in `regions.json`'s
+3. Add a new dict entry keyed by that exact tuple to `_LAYOUT_PROFILES` in
+   `src/profiles/ui_layout.py`, `_FINGERPRINT_PROFILES` in
+   `src/profiles/fingerprints.py`, and a new object in `regions.json`'s
    `profiles` array with that `window_size`.
 
 If the window is later resized, moved to a different DPI setting, or a `regions.json`
@@ -217,8 +218,10 @@ one directly confirmed at that exact size).
 - **`screenshot_window()` refuses to capture unless the target window is actually in the
   foreground.** `mss` grabs a screen *region* at the window's last-known coordinates, not
   the window's content directly — if another window (browser, alt-tab) covers that region,
-  a naive capture would silently return the wrong thing. Bring the game window to front
-  before calling any `calibrate.py`/`capture.py` function if you hit this error.
+  a naive capture would silently return the wrong thing. `calibrate.py shot` calls
+  `focus_window()` itself before capturing, so it handles this automatically; if you call
+  `screenshot_window()`/`screenshot_region()` directly (e.g. from a Python shell), bring
+  the game window to front yourself first, or call `focus_window(hwnd)` before it.
 - **Pick regions that don't scroll/animate.** A region over live chat or a ticker will
   OCR whatever's there *at the instant of capture* — fine for a one-off read, useless for
   a stable "current value" reading. Point regions at static HUD elements (resource

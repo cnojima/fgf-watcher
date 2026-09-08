@@ -56,7 +56,65 @@ _LAYOUT_PROFILES: dict[ProfileKey, UILayout] = {
         drag_from=(1000, 900),
         drag_to=(1000, 550),
         attribute_close_button=(1275, 230),
+    ),    
+    ("darwin", (1280, 828)): UILayout(
+        # Recalibrated live via calibrate.py zoom against fresh screenshots
+        # (not eyeballed) - the previous values in this block were all
+        # systematically wrong (most landed in the title bar or on blank
+        # space), apparently calibrated before get_window_rect()/
+        # screenshot_window() included the title bar in their coordinate
+        # space. Every point/box below was confirmed either by zoom
+        # inspection or by a live click that produced the expected screen
+        # transition.
+        back_arrow=(378, 52),  # confirmed live: closes ship detail -> fleet_list
+        first_card_click=(640, 165),  # confirmed via zoom: center of first fleet card art
+        # Generous top/bottom margin around the ship name text (y 32-65) to
+        # avoid clipping descenders - see the g/j/p/q/y lesson in CLAUDE.md.
+        # Right edge stops well before the "rename" pencil icon at x~495-515.
+        name_box=(395, 25, 610, 72),
+        right_arrow=(912, 545),  # confirmed via zoom: unchanged from prior calibration
+        hamburger_icon=(822, 722),  # confirmed live: opens the Attribute Details modal
+        details_tab=(737, 227),  # confirmed live: switches modal to the Details tab
+        # Top of table_box is the modal's Overview/Details tab bar (y=196),
+        # not the scrollable content - table_tab_bar_height below tells
+        # attribute_details.py where the real (scrolling) content starts
+        # within this crop. Bottom (698) is the modal's own lower edge,
+        # confirmed via zoom against a live Details-tab screenshot.
+        table_box=(433, 196, 848, 698),
+        table_tab_bar_height=57,  # confirmed via zoom: tab bar occupies y 196-253 of table_box
+        # Drag from a lower point to a higher one = touch-style swipe-up
+        # (scrolls the list down). Exact distance matters less than it looks -
+        # attribute_details.py measures actual scroll offset from pixel
+        # content rather than trusting this number.
+        drag_from=(640, 650),
+        drag_to=(640, 470),
+        attribute_close_button=(814, 176),  # confirmed live: closes the Attribute Details modal
     ),
+    # ("darwin", (1280, 828)): UILayout(
+    #     back_arrow=(705, 35),
+    #     first_card_click=(1000, 210),
+    #     # Bottom was originally 65, which clipped descenders (p/y/g) and was
+    #     # the actual cause of several OCR misreads (e.g. "Opportunity" ->
+    #     # "Opportunitv"), not an OCR engine limitation - confirmed by
+    #     # inspecting the crop directly.
+    #     name_box=(845, 5, 1090, 80),
+    #     right_arrow=(1825, 1010),
+    #     hamburger_icon=(1645, 1385),
+    #     details_tab=(1475, 410),
+    #     # Bottom was originally 1060, then 1150 - both wrong, both from
+    #     # eyeballing the full downscaled screenshot. At true max-scroll the
+    #     # last section's content extends to y=1290; confirmed via zoom.py's
+    #     # 10px grid against calibration_raw.png, not another eyeball guess.
+    #     table_box=(650, 350, 1650, 1330),
+    #     table_tab_bar_height=180,
+    #     # Drag from a lower point to a higher one = touch-style swipe-up
+    #     # (scrolls the list down). Exact distance matters less than it looks -
+    #     # attribute_details.py measures actual scroll offset from pixel
+    #     # content rather than trusting this number.
+    #     drag_from=(1000, 900),
+    #     drag_to=(1000, 550),
+    #     attribute_close_button=(1275, 230),
+    # ),
     # Add a ("darwin", (width, height)): UILayout(...) entry per Mac window
     # size calibrated via calibrate.py (it prints the exact key to use).
 }

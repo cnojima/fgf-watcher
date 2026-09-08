@@ -19,7 +19,7 @@ from Quartz import (
     kCGMouseButtonLeft,
 )
 
-from mac.capture_mac import _backing_scale_factor, _find_window_info, get_window_rect
+from mac.capture_mac import _find_window_info, get_window_rect
 
 # Virtual keycodes (US ANSI layout) for the fixed set of keys this repo
 # actually uses - see nav.py's OVERLAYS / BASE_VIEW_TOGGLE_KEY. CGEvent
@@ -36,15 +36,12 @@ _KEYCODES = {
 }
 
 
-def _pixel_to_point(px: int, py: int) -> tuple[float, float]:
-    """CGEventPost coordinates are in points (global desktop space), while
-    capture_mac works in physical pixels - convert before posting any event,
-    using the same scale factor capture_mac uses to go the other way."""
-    scale = _backing_scale_factor()
-    return px / scale, py / scale
-
-
 def _post_mouse(event_type, x: float, y: float) -> None:
+    """CGEventPost coordinates are points (global desktop space) - the same
+    space get_window_rect() returns on this system (confirmed live: mss and
+    CGEventPost agree on points here, despite Retina scaling - see
+    capture_mac._backing_scale_factor's docstring), so no pixel/point
+    conversion is needed between the two."""
     event = CGEventCreateMouseEvent(None, event_type, (x, y), kCGMouseButtonLeft)
     CGEventPost(kCGHIDEventTap, event)
 
@@ -60,10 +57,10 @@ def focus_window(hwnd: int) -> None:
 
 
 def click(hwnd: int, x: int, y: int) -> None:
-    """x, y are pixels relative to the window's frame (same frame as calibrate.py)."""
+    """x, y are points relative to the window's frame (same frame as calibrate.py)."""
     focus_window(hwnd)
     rect = get_window_rect(hwnd)
-    px, py = _pixel_to_point(rect.left + x, rect.top + y)
+    px, py = rect.left + x, rect.top + y
     _post_mouse(kCGEventMouseMoved, px, py)
     _post_mouse(kCGEventLeftMouseDown, px, py)
     _post_mouse(kCGEventLeftMouseUp, px, py)
@@ -87,14 +84,14 @@ def press_key(hwnd: int, key: str) -> None:
 def drag(hwnd: int, start_x: int, start_y: int, end_x: int, end_y: int,
          duration: float = 0.3, steps: int = 12, hold: float = 0.2) -> None:
     """Click-and-drag from (start_x, start_y) to (end_x, end_y) (window-frame
-    pixel coords). Mirrors win/input_control_win.py's drag() exactly: move through
+    point coords). Mirrors win/input_control_win.py's drag() exactly: move through
     intermediate points, then hold at the end point before releasing, so this
     game's momentum-scrolling lists read it as a deliberate stop rather than a
     flick (see win/input_control_win.py's docstring for why that matters)."""
     focus_window(hwnd)
     rect = get_window_rect(hwnd)
-    sx, sy = _pixel_to_point(rect.left + start_x, rect.top + start_y)
-    ex, ey = _pixel_to_point(rect.left + end_x, rect.top + end_y)
+    sx, sy = rect.left + start_x, rect.top + start_y
+    ex, ey = rect.left + end_x, rect.top + end_y
 
     _post_mouse(kCGEventMouseMoved, sx, sy)
     _post_mouse(kCGEventLeftMouseDown, sx, sy)

@@ -89,7 +89,7 @@ def screenshot_window(hwnd: int) -> Image.Image:
             "since a screenshot here would silently grab whatever's on top instead."
         )
     rect = get_window_rect(hwnd)
-    with mss.mss() as sct:
+    with mss.MSS() as sct:
         monitor = {"left": rect.left, "top": rect.top, "width": rect.width, "height": rect.height}
         raw = sct.grab(monitor)
         return Image.frombytes("RGB", raw.size, raw.bgra, "raw", "BGRX")

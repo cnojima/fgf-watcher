@@ -21,9 +21,9 @@ instead, which has no such failure mode.
 import time
 from dataclasses import dataclass
 
-from fingerprints import at_screen, current_screen, has_fingerprint
+from profiles.fingerprints import at_screen, current_screen, has_fingerprint
 from input_control import click, press_key
-from ui_layout import get_layout
+from profiles.ui_layout import get_layout
 
 BASE_VIEWS = {"system_map", "city_view"}
 BASE_VIEW_TOGGLE_KEY = "space"

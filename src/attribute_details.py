@@ -43,7 +43,7 @@ from PIL import Image
 from capture import screenshot_region
 from input_control import click, drag
 from ocr import preprocess, pytesseract
-from ui_layout import get_layout
+from profiles.ui_layout import get_layout
 
 MAX_SCROLLS = 45  # smaller per-drag distance means more scrolls needed to reach the bottom
 
@@ -157,6 +157,28 @@ def _parse(text: str, data: dict[str, dict[str, str]], section: list[str | None]
                 # percentage rows so both survive as distinct entries; a label
                 # that only ever appears one way just ends up with one key.
                 key = f"{canonical} %" if value.endswith("%") else canonical
+                if key in data[section[0]] and data[section[0]][key] != value:
+                    # A sub-row label repeating WITH A DIFFERENT VALUE within
+                    # what's supposedly still the same section is a strong
+                    # signal that a section header was silently dropped by
+                    # OCR in between (this composite is tall enough that
+                    # Tesseract occasionally loses a whole header line even
+                    # though the exact same crop reads fine in isolation -
+                    # confirmed by direct comparison). Confirmed live: a
+                    # dropped "ATTACK" header let its own "Champions"/"Crew"
+                    # rows silently overwrite HP's real values with this
+                    # exact symptom. We can't recover the missing header's
+                    # name, but we can stop attributing further rows to the
+                    # wrong section - dropping is far safer than silently
+                    # corrupting one.
+                    #
+                    # A repeat with the SAME value is just this row being
+                    # OCR'd again from overlapping capture regions - harmless,
+                    # ignore rather than treat as a section boundary.
+                    section[0] = None
+                    continue
+                if key in data[section[0]]:
+                    continue
                 data[section[0]][key] = value
         else:
             data.setdefault(canonical, {})["_total"] = value
@@ -328,7 +350,14 @@ def read_attribute_details(hwnd) -> dict[str, dict[str, str]]:
     time.sleep(0.6)
 
     composite = _stitch_full_table(hwnd, layout)
-    text = pytesseract.image_to_string(preprocess(composite, upscale=2), config="--psm 6").strip()
+    # psm 6 (uniform block of text) was silently dropping whole section-header
+    # lines (e.g. "HP  1,029,897") once the composite grew past a couple
+    # hundred px tall, even though the exact same crop OCR'd correctly in
+    # isolation - confirmed by comparing psm 6 vs psm 4 output on an identical
+    # saved composite. psm 4 (single column of variable-sized text) is also a
+    # better semantic fit for this vertically-stacked list and recovered
+    # every header psm 6 lost in that comparison.
+    text = pytesseract.image_to_string(preprocess(composite, upscale=2), config="--psm 4").strip()
 
     data: dict[str, dict[str, str]] = {}
     section: list[str | None] = [None]  # no cross-capture concern - this is one linear pass

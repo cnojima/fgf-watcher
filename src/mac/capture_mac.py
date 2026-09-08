@@ -32,13 +32,22 @@ class WindowRect:
 
 
 def _backing_scale_factor() -> float:
-    """Points-to-pixels scale factor for the main screen (2.0 on Retina).
+    """Points-to-pixels scale factor for the main screen (2.0 on Retina) -
+    used only for describe_display_scale()'s human-readable diagnostic below,
+    NOT for coordinate math.
 
-    Quartz window bounds (kCGWindowBounds) are reported in points, but mss
-    (and screen pixel content generally) works in physical pixels. Without
-    this conversion, every capture and click would be off by the scale
-    factor on a Retina display - the macOS equivalent of the Windows
-    DPI-awareness fix in win/capture_win.py. Do not drop this "to simplify."
+    Confirmed live (see git history / session notes): despite this being a
+    Retina display, this mss version's sct.monitors reports the screen in
+    POINTS (matching NSScreen.frame() 1:1), and sct.grab() expects/returns
+    coordinates in that same points space - not physical pixels. An earlier
+    version of this file multiplied window bounds by this scale factor before
+    handing them to mss, assuming mss wanted physical pixels (mirroring the
+    Windows DPI-awareness pattern) - that assumption was wrong here and
+    produced a capture region ~2x too large/offset, which mss silently
+    padded with white wherever the request fell outside its real (points)
+    screen bounds. Confirmed by direct comparison: capturing with raw,
+    unscaled kCGWindowBounds points produced a perfect, full capture;
+    doubling them did not. get_window_rect() below must stay in points.
     """
     screen = NSScreen.mainScreen()
     return float(screen.backingScaleFactor()) if screen else 1.0
@@ -94,14 +103,15 @@ def _find_window_info(hwnd: int) -> dict:
 
 def get_window_rect(hwnd: int) -> WindowRect:
     """Whole-window frame (title bar included - macOS has no cheap client-rect-only
-    query for another app's window) in physical-pixel screen coordinates."""
+    query for another app's window) in POINT screen coordinates - the same
+    space mss.grab() and CGEventPost operate in on this system (see
+    _backing_scale_factor's docstring for why this is points, not pixels)."""
     info = _find_window_info(hwnd)
     bounds = info["kCGWindowBounds"]
-    scale = _backing_scale_factor()
-    left = round(bounds["X"] * scale)
-    top = round(bounds["Y"] * scale)
-    width = round(bounds["Width"] * scale)
-    height = round(bounds["Height"] * scale)
+    left = round(bounds["X"])
+    top = round(bounds["Y"])
+    width = round(bounds["Width"])
+    height = round(bounds["Height"])
     return WindowRect(left, top, left + width, top + height)
 
 
@@ -124,14 +134,14 @@ def screenshot_window(hwnd: int) -> Image.Image:
             "since a screenshot here would silently grab whatever's on top instead."
         )
     rect = get_window_rect(hwnd)
-    with mss.mss() as sct:
+    with mss.MSS() as sct:
         monitor = {"left": rect.left, "top": rect.top, "width": rect.width, "height": rect.height}
         raw = sct.grab(monitor)
         return Image.frombytes("RGB", raw.size, raw.bgra, "raw", "BGRX")
 
 
 def screenshot_region(hwnd: int, box: tuple[int, int, int, int]) -> Image.Image:
-    """box is (left, top, right, bottom) in pixels relative to the window frame."""
+    """box is (left, top, right, bottom) in points relative to the window frame."""
     full = screenshot_window(hwnd)
     return full.crop(box)
 
