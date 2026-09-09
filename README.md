@@ -81,7 +81,13 @@ below.
    ungridded `data/calibration_raw.png`. Use it to read off *approximate* coordinates, then
    **always confirm with `zoom`** (10px grid) before clicking anything — reading coordinates
    off the full, downscaled screenshot is unreliable enough that it caused several wrong
-   clicks during development; `zoom` is what actually gets you a correct coordinate.
+   clicks during development; `zoom` is what actually gets you a correct coordinate. `shot`
+   takes an optional `[delay]` (default 3s) and prints a countdown before it captures —
+   `screenshot_window()` requires the game to be the foreground window, but launching `shot`
+   from a terminal makes the *terminal* the foreground window, so the delay is your window
+   to alt-tab back to the game before the actual capture happens. `zoom` never touches the
+   live game at all (it just re-crops the already-saved `calibration_raw.png`), so it needs
+   no delay and can be run any time after a `shot`.
 
 2. **Define regions** in a config file (see `config/regions.example.json`):
    ```json
@@ -161,13 +167,35 @@ below.
    module looks the way it does - getting a reliable scrollable-list reader working took
    many iterations and each one taught something worth not re-learning.
 
-9. **Example feature: collecting every owned flagship's full stats**
-   (`src/collect_all_flagships.py`) — opens the fleet list, pages through all 1-4 owned
-   ships (left/right arrows within the ship detail view, not by re-entering the list and
-   clicking a card each time - see the module docstring for why that approach was tried
-   and abandoned), runs `attribute_details.read_attribute_details()` on each one, and
-   writes `data/attributes/{ship name}.json` (`{"ship", "attributes", "validation"}`) per
-   ship. Run directly: `powershell -File run_admin.ps1 src\collect_all_flagships.py`.
+9. **Example feature: reading a ship's equipped components** (`src/component_details.py`)
+   — the Component tab has two distinct layouts: a grid of up to 5 icons around the ship
+   (no detail panel) right after opening the tab, and a detail view (name/rarity/level,
+   stat block, set-bonus text) after clicking one of those icons, with a *different* row
+   of 5 thumbnails at the bottom to switch between components without leaving the detail
+   view. `read_all_components()` opens the first icon automatically, then pages through
+   the rest via that thumbnail row.
+
+10. **Example feature: reading a ship's promotion level** (`src/promotion_details.py`) — the
+    Promote tab renders two structurally different layouts depending on state. An unmaxed
+    ship (level 0-5) shows a "current → next" comparison row with a triangle badge - a Roman
+    numeral (I-V) for levels 1-5, or a muted star/cross glyph (no numeral) for level 0. A
+    maxed ship (level 6) drops that whole row, shifting everything below it up - so the same
+    fixed badge box no longer lines up with anything meaningful. `read_promotion_level()`
+    reads the badge first (covers levels 0-5 via OCR, empty for a numeral means level 0 once
+    the max case below is ruled out), and falls back to OCRing the PROMOTE/PROMOTED button
+    text - the one element confirmed to sit in the same place in *both* layouts - to tell
+    level 0 apart from max. See CLAUDE.md for how this was calibrated against real ships at
+    level 0, level I, and max.
+
+11. **Example feature: collecting every owned flagship's full stats**
+    (`src/collect_all_flagships.py`) — opens the fleet list, pages through every owned ship
+    (left/right arrows within the ship detail view, not by re-entering the list and
+    clicking a card each time - see the module docstring for why that approach was tried
+    and abandoned), reads each one's attributes, components, and promotion level, and writes
+    `data/attributes/{ship name}.json`
+    (`{"ship", "attributes", "validation", "components", "promotion"}`) per real ship -
+    locked/not-yet-unlocked ship slots are detected and skipped (see Known gotchas). Run
+    directly: `powershell -File run_admin.ps1 src\collect_all_flagships.py`.
 
 ## Adding a display profile
 
@@ -279,6 +307,67 @@ one directly confirmed at that exact size).
   root-caused - possibly a "last selected" sticky-highlight state). `collect_all_flagships.py`
   avoids this entirely by staying in the ship detail view and paging with the left/right
   arrows instead of returning to the list between ships.
+- **Paging between ships with the side arrows does not reset which tab (Overview/Component/
+  Promote) is active.** Whichever tab was showing for the previous ship stays showing for
+  the next one. `collect_all_flagships.py` explicitly clicks the Overview tab at the start
+  of every iteration rather than assuming it - true for ship 1 (freshly opened from the
+  fleet list) but not ship 2 onward (arrived at via the arrows, still on whatever tab the
+  previous ship ended on).
+- **`back()` only closes one level, and "one level" means something different depending on
+  which sub-view you're in.** From a component's detail view, one `back()` lands on the
+  Component tab's own grid-of-5-icons view - not Overview, not the fleet list. Don't assume
+  a fixed number of `back()` calls reaches a given destination without confirming from the
+  specific state you're actually leaving.
+- **A direct "is this badge present" check is much cheaper than "did the expensive read
+  come back empty."** Detecting
+  a locked/not-yet-unlocked ship slot by checking `read_attribute_details()` for an empty
+  result works, but wastes a full failed scroll-and-OCR pass on every locked slot.
+  Checking for the "Level NN" badge on the Overview tab first (present only on real,
+  unlocked ships - confirmed by the user directly) catches the same case for the cost of
+  one small OCR call. This game's UI uses that same locked-vs-unlocked metaphor broadly:
+  locked items are still viewable, just rendered without the labels/badges an unlocked one
+  gets, rather than being hidden entirely - worth checking for an equivalent badge before
+  assuming "empty result = not real" elsewhere in the UI.
+- **A short badge like "Level NN" can need a different PSM mode than the multi-line blocks
+  elsewhere in this codebase.** `--psm 6` (the usual default for stat blocks) read this
+  specific badge as empty every time despite the crop being visibly correct; `--psm 11`
+  (sparse text) read it reliably. The word "Level" itself still didn't come through even
+  with 11 - only the digits did, which was enough for a presence check.
+- **Recalibrating coordinates from a saved reference image only works if that image is
+  actually current.** A batch of `component_details.py`'s boxes were originally derived
+  from crops of `calibration_raw.png` without first confirming a fresh `shot` had just been
+  taken - the file still held an older screenshot, and every box came out wrong by
+  150-450px as a result, in a way that looked at first like ordinary miscalibration.
+  Confirmed by comparing pixel values directly between the "reference" and a genuinely
+  fresh shot. Always take (or explicitly confirm the freshness of) the screenshot you're
+  about to crop from, not just trust a filename.
+- **Disabling Windows UAC prompts does not mean scripts run elevated.** With UAC prompts
+  disabled system-wide, `run_admin.ps1`'s elevation request goes through silently (no
+  visible consent dialog), but a plain, non-elevated `python.exe` invocation still cannot
+  reach the (elevated) game at all - confirmed directly (`IsInRole(Administrator)` false,
+  and clicks/keys silently not landing). Elevation still has to actually happen per
+  process; UAC being disabled just removes the prompt from that process, not the
+  requirement for the process to be elevated in the first place.
+- **A UI element can move between two states of the same screen, breaking a fixed
+  calibrated box for one of them.** `promotion_details.py`'s Promote tab reads the current
+  level off a badge, but a maxed ship's layout drops an entire progress row that a
+  non-maxed ship shows above that badge - shifting everything below it (including the
+  badge itself) to a different position. A box calibrated against a level-1-5 ship simply
+  doesn't contain the badge at all once a ship is maxed; it wasn't a case of "OCR misread
+  the icon" but "the icon isn't in this box on this screen." Confirmed by capturing real
+  screenshots of a level-0 ship, a level-I ship, and a maxed ship and comparing the actual
+  panel layouts, not by assuming one screen's coordinates generalize to a related one.
+  Fixed by finding a *different* element (the PROMOTE/PROMOTED button) confirmed to sit in
+  the same place in both layouts, and reading that instead for the one distinction (max vs
+  not) that the moved badge could no longer make reliably.
+- **`calibrate.py shot` stealing focus made it unusable for calibrating a screen you need
+  to keep visible.** Its foreground-window check is correct and load-bearing (see the
+  gotcha above about `screenshot_window()`), but running `shot` from a terminal makes the
+  *terminal* the foreground window at the exact moment it's about to capture, so it always
+  failed against a screen you'd just switched to. Fixed by adding an optional countdown
+  delay (default 3s) before the actual capture, giving time to alt-tab back to the game
+  after launching the command - `zoom` needed no such fix since it only re-crops an
+  already-saved file and never touches the live game.
 
 ## Next steps to consider
 
@@ -293,9 +382,9 @@ one directly confirmed at that exact size).
   only after confirming a *correctly-sized* box still fails on Tesseract, which so far has
   only been true for decorative titles like "FLAGSHIP" that we don't actually need to OCR
   (a pixel fingerprint identifies the screen instead).
-- Only 2 of ~7 catalogued screens (`system_map`, `fleet_list`) have pixel fingerprints in
-  `fingerprints.py`. `storage`, `champion`, `guild`, `radiant`, `chat`, and `city_view` are
-  wired into `nav.py`'s key mappings but `goto()` can't verify arrival for them yet.
+- Only 3 of ~7 catalogued screens (`system_map`, `fleet_list`, `city_view`) have pixel
+  fingerprints in `fingerprints.py`. `storage`, `champion`, `guild`, `radiant`, and `chat`
+  are wired into `nav.py`'s key mappings but `goto()` can't verify arrival for them yet.
 - `collect_all_flagships.py` occasionally captures 11 of a ship's 12 stat sections instead
   of 12 - the twelfth ("Chance to inflict Major Damage") sometimes only gets its `_total`
   without sub-rows on a given run. Not corrupted data, just incomplete for that one field;

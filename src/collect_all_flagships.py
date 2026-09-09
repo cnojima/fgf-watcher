@@ -13,6 +13,7 @@ and move between ships with the left/right arrows, never re-entering the
 list at all. Confirmed clean across repeated runs earlier this session.
 """
 import json
+import re
 import time
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from capture import find_window, screenshot_region
 from profiles.fingerprints import current_screen
 from input_control import click, focus_window
 from nav import goto, back
+from ocr import preprocess, pytesseract
 from attribute_details import read_attribute_details, validate_sections
 from flagships import MAX_SHIPS
 from profiles.ui_layout import get_layout
@@ -31,6 +33,20 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "attributes"
 def _read_ship_name(hwnd, layout) -> str:
     img = screenshot_region(hwnd, layout.name_box)
     return ocr_easy.read_text(img)
+
+
+def _is_ship_unlocked(hwnd) -> bool:
+    """Cheap check done *before* the expensive attribute scroll-read: an
+    unlocked ship's Overview tab shows a "Level NN" badge; a locked slot's
+    preview doesn't. psm 11 (sparse text) is what actually reads the digits
+    here - psm 6 (the usual multi-line default) came back empty on this
+    badge in testing despite the crop being visibly correct, for reasons
+    not fully understood; 11 is confirmed to work. Only the digits matter -
+    the word "Level" itself doesn't reliably come through even on a real
+    ship, so this checks for any digit rather than requiring the word."""
+    img = screenshot_region(hwnd, LEVEL_BADGE_BOX)
+    text = pytesseract.image_to_string(preprocess(img, upscale=2), config="--psm 11").strip()
+    return bool(re.search(r"\d", text))
 
 
 def collect_all_flagships(hwnd) -> dict[str, dict]:
@@ -64,7 +80,6 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         back(hwnd)
         time.sleep(0.6)
 
-    goto(hwnd, "system_map")
     goto(hwnd, "fleet_list")
     click(hwnd, *layout.first_card_click)
     time.sleep(0.6)
@@ -85,6 +100,26 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         if not name or name in results:
             break  # wrapped back around to a ship we've already seen
 
+        # Paging to a ship with the side arrows leaves whichever tab
+        # (Overview/Component/Promote) was active for the *previous* ship
+        # still active - it doesn't reset to Overview on its own. Confirmed
+        # live. So every iteration explicitly selects Overview before
+        # reading attributes, rather than assuming we're already there (true
+        # for ship 1, via FIRST_CARD_CLICK, but not for ship 2+).
+        click(hwnd, *OVERVIEW_TAB)
+        time.sleep(0.6)
+
+        if not _is_ship_unlocked(hwnd):
+            # No "Level NN" badge - a locked, not-yet-unlocked ship
+            # placeholder, not a real ship (confirmed directly: an
+            # unrevealed slot can still show a name preview, garbled or
+            # not, alongside the rest of its Overview tab). Only the first
+            # ship slot (Gram) is guaranteed active on any account - every
+            # slot after that may or may not be unlocked. Check this before
+            # the expensive attribute scroll-read, not after, so a locked
+            # slot costs one cheap OCR call instead of a full failed scan.
+            break
+
         data = read_attribute_details(hwnd)
         validation = validate_sections(data)
         results[name] = data
@@ -98,7 +133,9 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         click(hwnd, *layout.right_arrow)  # page to the next ship, still in detail view
         time.sleep(0.6)
 
-    back(hwnd)  # close the ship detail view, back to the fleet list
+    # Loop exits with the view on the wrapped-around ship's Promote tab (see
+    # the note above) - one back() from there reaches the fleet list.
+    back(hwnd)
     return results
 
 
