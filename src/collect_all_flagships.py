@@ -23,11 +23,20 @@ from input_control import click, focus_window
 from nav import goto, back
 from ocr import preprocess, pytesseract
 from attribute_details import read_attribute_details, validate_sections
+from component_details import OVERVIEW_TAB, read_all_components
 from flagships import MAX_SHIPS
 from profiles.ui_layout import get_layout
 import ocr_easy
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "attributes"
+COMPONENT_DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "components"
+
+# The "Level NN" badge under the ship model on its Overview tab. Same visual
+# metaphor used throughout this game's UI: a locked/not-yet-unlocked item is
+# still viewable, just rendered without the labels an unlocked one gets -
+# confirmed by the user directly, with this badge specifically named as the
+# reliable "is this ship real" signal for the flagship section.
+LEVEL_BADGE_BOX = (1230, 1055, 1360, 1180)
 
 
 def _read_ship_name(hwnd, layout) -> str:
@@ -85,6 +94,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
     time.sleep(0.6)
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    COMPONENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     results: dict[str, dict] = {}
 
     for _ in range(MAX_SHIPS):
@@ -130,6 +140,17 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
 
         click(hwnd, *layout.attribute_close_button)  # close the attribute overlay
         time.sleep(0.6)
+
+        # read_all_components() assumes the Overview tab is showing (true here,
+        # right after the attribute overlay closes) and switches to the
+        # Component tab itself - it leaves the view on the last thumbnail's
+        # detail, which is fine since the next iteration re-selects Overview
+        # before doing anything else.
+        components = read_all_components(hwnd)
+        component_path = COMPONENT_DATA_DIR / f"{name}.json"
+        with open(component_path, "w", encoding="utf-8") as f:
+            json.dump({"ship": name, "components": components}, f, indent=2)
+
         click(hwnd, *layout.right_arrow)  # page to the next ship, still in detail view
         time.sleep(0.6)
 
