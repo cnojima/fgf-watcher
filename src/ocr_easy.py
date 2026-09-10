@@ -9,8 +9,12 @@ Tesseract, so it's used only where Tesseract has been confirmed to fail on
 this font - e.g. ship names - not as a blanket replacement for digit/plain
 UI text reading, where Tesseract is faster and already accurate.
 """
+import logging
+
 import numpy as np
 from PIL import Image
+
+log = logging.getLogger(__name__)
 
 _reader = None
 
@@ -18,6 +22,7 @@ _reader = None
 def _get_reader():
     global _reader
     if _reader is None:
+        log.info("Loading EasyOCR model (first use - this can take several seconds)")
         import easyocr
         _reader = easyocr.Reader(["en"], gpu=False)
     return _reader
@@ -26,4 +31,6 @@ def _get_reader():
 def read_text(image: Image.Image) -> str:
     reader = _get_reader()
     results = reader.readtext(np.array(image.convert("RGB")), detail=0)
-    return " ".join(results).strip()
+    text = " ".join(results).strip()
+    log.debug("OCR (easyocr): %r", text)
+    return text

@@ -18,20 +18,18 @@ overlays instead of closing just that overlay - unsafe as a generic
 navigation action. Overlays are closed with the on-screen back-arrow click
 instead, which has no such failure mode.
 """
+import logging
 import time
 from dataclasses import dataclass
 
-from fingerprints import FINGERPRINTS, at_screen, current_screen
+from profiles.fingerprints import at_screen, current_screen, has_fingerprint
 from input_control import click, press_key
+from profiles.ui_layout import get_layout
+
+log = logging.getLogger(__name__)
 
 BASE_VIEWS = {"system_map", "city_view"}
 BASE_VIEW_TOGGLE_KEY = "space"
-
-# Consistent top-left back chevron, present on every overlay we've seen so far.
-# Coordinate confirmed via calibrate.py zoom, not eyeballed - see nav-building
-# session notes for why that distinction matters (a rough guess here silently
-# clicked empty space next to the real button).
-BACK_ARROW = (705, 35)
 
 
 @dataclass
@@ -58,9 +56,11 @@ def goto(hwnd, screen_name: str, verify: bool = True, timeout: float = 2.0) -> N
     For a base view, call back() first if an overlay is currently open -
     goto() only handles the system_map/city_view toggle itself, and doesn't
     know how to close an arbitrary overlay on top of it."""
+    log.debug("Navigating to %r", screen_name)
     if screen_name in BASE_VIEWS:
         current = current_screen(hwnd)
         if current == screen_name:
+            log.debug("Already on %r", screen_name)
             return
         if current is not None and current not in BASE_VIEWS:
             raise RuntimeError(
@@ -72,10 +72,11 @@ def goto(hwnd, screen_name: str, verify: bool = True, timeout: float = 2.0) -> N
         screen = OVERLAYS[screen_name]
         press_key(hwnd, screen.key)
 
-    if verify and screen_name in FINGERPRINTS:
+    if verify and has_fingerprint(hwnd, screen_name):
         deadline = time.time() + timeout
         while time.time() < deadline:
             if at_screen(hwnd, screen_name):
+                log.debug("Landed on %r", screen_name)
                 return
             time.sleep(0.2)
         raise RuntimeError(f"Sent navigation action for {screen_name!r} but never landed on it")
@@ -84,4 +85,5 @@ def goto(hwnd, screen_name: str, verify: bool = True, timeout: float = 2.0) -> N
 def back(hwnd) -> None:
     """Click the on-screen back arrow to close the current overlay and return
     to whichever base view was active. Never uses ESC (see module docstring)."""
-    click(hwnd, *BACK_ARROW)
+    log.debug("back()")
+    click(hwnd, *get_layout(hwnd).back_arrow)

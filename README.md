@@ -2,12 +2,18 @@
 
 Capture a game window, OCR specific stat regions, log values over time, and (optionally) drive menu input.
 
-Built and tested against Python 3.12 + Tesseract 5.4 on Windows, targeting a windowed (non-fullscreen-exclusive) game.
+Built and tested against Python 3.12 + Tesseract 5.4 on Windows, targeting a windowed
+(non-fullscreen-exclusive) game. Also supports macOS against a native Mac build of the
+same game, via a separate capture/input backend (see "macOS setup" below) — **fullscreen
+is unsupported on either platform** (see "Windowed, fixed-size only" below); everything
+else in this repo (`nav.py`, `calibrate.py`, `ocr.py`, `tracker.py`, etc.) is
+platform-agnostic and needs no changes to work on either OS.
 
-## Setup (already done in this environment)
+## Setup (already done in this environment, Windows)
 
 - Python 3.12: `C:\Users\cnoji\AppData\Local\Programs\Python\Python312\python.exe`
-- Tesseract OCR: `C:\Program Files\Tesseract-OCR\tesseract.exe` (path is hardcoded in `src/ocr.py`)
+- Tesseract OCR: `C:\Program Files\Tesseract-OCR\tesseract.exe` (`src/ocr.py` uses whatever's
+  on `PATH` first, falling back to this path)
 - EasyOCR (`ocr_easy.py`): a heavier fallback engine for text Tesseract can't read even with
   a correctly-sized box (see Known gotchas) — installed via `requirements.txt` below, pulls
   in torch, and downloads its model weights on first use (needs network access that once).
@@ -22,6 +28,46 @@ powershell -File run_admin.ps1 src\some_script.py [args]
 ```
 This triggers one UAC consent prompt per invocation; there's no way around that, and
 scripts here don't try to.
+
+## macOS setup
+
+- `brew install tesseract`
+- `pip install -r requirements.txt` — installs `pyobjc-framework-Quartz` and
+  `pyobjc-framework-Cocoa` instead of the Windows-only `pywin32`/`pydirectinput`
+  (environment markers in `requirements.txt` pick the right set automatically).
+- Grant two permissions **once**, to whichever app runs these scripts (Terminal, iTerm,
+  or your IDE) via System Settings → Privacy & Security:
+  - **Screen Recording** — needed for `mss` screenshots and to read other apps' window
+    titles via Quartz.
+  - **Accessibility** — needed to post synthetic clicks/key presses and to activate the
+    game's window.
+
+  Unlike Windows' `run_admin.ps1`, there's no per-invocation prompt once these are granted
+  — no macOS equivalent of `run_admin.ps1` is needed at all.
+- Region boxes are **not portable between platforms** — recalibrate from scratch with
+  `calibrate.py` on each. On Windows, boxes are relative to the window's *client area*
+  (title bar excluded, via `GetClientRect`); on macOS there's no cheap equivalent query for
+  another app's window, so boxes are relative to the **whole window frame, title bar
+  included**. Different game build/resolution/UI scaling per platform would have forced a
+  recalibration anyway, independent of this difference.
+
+## Windowed, fixed-size only
+
+Fullscreen is explicitly unsupported on both platforms — calibrated pixel boxes are only
+meaningful at a fixed, known viewport size, and exclusive fullscreen often isn't
+capturable via normal window APIs at all.
+
+Confirmed live during Mac bring-up: even a *windowed* game at a differently-sized window
+puts UI elements at different absolute pixel positions — a "resolution" or aspect ratio
+matching isn't enough, only an **exact** window content pixel size transfers a calibration.
+Windows DPI scaling has the same failure mode (100/125/150/175%, auto-picked per-monitor —
+there's no safe universal default to assume). So every module holding calibrated pixel
+data (`fingerprints.py`, `ui_layout.py`, `tracker.py`'s region configs) is keyed by
+`(platform, exact window content size in pixels)` via `src/display_profiles.py`, and
+raises a clear error listing known profiles + your current size/scale if nothing matches,
+rather than silently reading the wrong pixels. `calibrate.py shot` prints the exact
+`(platform, size)` key to use when adding a new profile. See "Adding a display profile"
+below.
 
 ## Workflow
 
@@ -47,12 +93,23 @@ scripts here don't try to.
    ```json
    {
      "window_title": "substring of window title",
-     "regions": {
-       "gold": {"box": [1690, 100, 1900, 140], "digits_only": true}
-     }
+     "profiles": [
+       {
+         "platform": "win32",
+         "window_size": null,
+         "regions": {
+           "gold": {"box": [1690, 100, 1900, 140], "digits_only": true}
+         }
+       }
+     ]
    }
    ```
-   Copy it to `config/regions.json` and fill in real boxes/title.
+   Copy it to `config/regions.json` and fill in real boxes/title. One file can hold a
+   profile per platform/window-size combination you actually use — `tracker.py` picks the
+   one matching the game's current window automatically (see "Adding a display profile").
+   `"window_size": null` marks the legacy fallback profile (used when nothing else
+   matches); a real profile needs an exact `[width, height]` in pixels, from
+   `calibrate.py shot`'s output.
 
 3. **Track**
    ```
@@ -73,7 +130,7 @@ scripts here don't try to.
      and per a known game bug it can also trigger a full quit from certain overlays instead
      of closing just that overlay — unsafe as a generic back/reset action.
 
-5. **Detect which screen is showing** (`src/fingerprints.py`) — pixel-color fingerprints,
+5. **Detect which screen is showing** (`src/profiles/fingerprints.py`) — pixel-color fingerprints,
    not OCR. Several UI elements here (the "FLAGSHIP" title, "Trader Era") use a decorative
    font or sit over a watermark graphic that defeats text recognition entirely, but a single
    pixel inside a known letter stroke or background patch is reliably the same color
@@ -81,15 +138,19 @@ scripts here don't try to.
 
 6. **Send input** (`src/input_control.py`) — building blocks only, not a full bot:
    - `focus_window(hwnd)`, `click(hwnd, x, y)`, `press_key(hwnd, key)`, `drag(hwnd, x1, y1, x2, y2)`
-   - Coordinates are relative to the window's client area, same frame as calibration.
-   - Uses `pydirectinput` instead of `pyautogui` because many games only respond to
-     DirectInput-style synthetic input. `pydirectinput` has no `scroll()` at all (no
-     `MOUSEEVENTF_WHEEL` wrapper) - `drag()` is how every scrollable list here is scrolled,
-     as a mouse-down/move/hold-briefly/mouse-up touchscreen-style swipe. The brief hold
-     before release matters: releasing the instant the cursor stops reads as a flick and
-     the list keeps coasting on momentum afterward, making the actual scroll distance
-     inconsistent between calls.
-   - Must run elevated (see above) — the game runs as Administrator.
+   - Coordinates are relative to the window's client area on Windows, or the whole window
+     frame on macOS (see "macOS setup" above) — same frame calibration was done in either way.
+   - `input_control.py` is a thin `sys.platform` dispatcher onto
+     `src/win/input_control_win.py` (`pydirectinput`, chosen over `pyautogui` because many
+     games only respond to DirectInput-style synthetic input) or
+     `src/mac/input_control_mac.py` (raw Quartz `CGEvent` posting). Neither backend has a
+     real `scroll()` — `drag()` is how every scrollable
+     list here is scrolled, as a mouse-down/move/hold-briefly/mouse-up touchscreen-style
+     swipe. The brief hold before release matters: releasing the instant the cursor stops
+     reads as a flick and the list keeps coasting on momentum afterward, making the actual
+     scroll distance inconsistent between calls.
+   - Must run elevated on Windows (see above) — the game runs as Administrator. On macOS,
+     grant Accessibility once instead (see "macOS setup").
 
 7. **Example feature: reading owned flagships** (`src/flagships.py`) — opens the fleet
    list, pages through the ship detail view (1-4 ships), and OCRs each ship's name with
@@ -136,6 +197,31 @@ scripts here don't try to.
     locked/not-yet-unlocked ship slots are detected and skipped (see Known gotchas). Run
     directly: `powershell -File run_admin.ps1 src\collect_all_flagships.py`.
 
+## Adding a display profile
+
+Every module holding calibrated pixel data — `src/profiles/fingerprints.py` (screen detection),
+`src/profiles/ui_layout.py` (every click/box/drag coordinate used by `nav.py`/`flagships.py`/
+`attribute_details.py`/`collect_all_flagships.py`), and `config/regions.json`'s
+`profiles` array — is keyed by `(platform, exact window content size in pixels)` via
+`src/display_profiles.py`. To add a new one (a different machine, monitor, DPI scaling,
+or a second platform):
+
+1. Run `python src/calibrate.py shot "window title"` — it prints the exact profile key
+   to use, e.g. `Profile key for this window: ('darwin', (2560, 1656))`, plus a
+   display-scale diagnostic (DPI% on Windows, backing scale + "looks like" resolution on
+   macOS) for your own reference.
+2. Calibrate coordinates the normal way (`calibrate.py zoom`, never eyeballed — see below).
+3. Add a new dict entry keyed by that exact tuple to `_LAYOUT_PROFILES` in
+   `src/profiles/ui_layout.py`, `_FINGERPRINT_PROFILES` in
+   `src/profiles/fingerprints.py`, and a new object in `regions.json`'s
+   `profiles` array with that `window_size`.
+
+If the window is later resized, moved to a different DPI setting, or a `regions.json`
+without a matching profile is used, every one of these raises a clear error listing known
+profiles and the currently detected size/scale — this is deliberate (this repo's core
+rule is never guess or mathematically transform a coordinate across sizes, only ever use
+one directly confirmed at that exact size).
+
 ## Known gotchas (found while testing against a live game)
 
 - **Give text regions vertical margin for descenders — this caused most of our OCR
@@ -160,20 +246,32 @@ scripts here don't try to.
 - **`screenshot_window()` refuses to capture unless the target window is actually in the
   foreground.** `mss` grabs a screen *region* at the window's last-known coordinates, not
   the window's content directly — if another window (browser, alt-tab) covers that region,
-  a naive capture would silently return the wrong thing. Bring the game window to front
-  before calling any `calibrate.py`/`capture.py` function if you hit this error.
+  a naive capture would silently return the wrong thing. `calibrate.py shot` calls
+  `focus_window()` itself before capturing, so it handles this automatically; if you call
+  `screenshot_window()`/`screenshot_region()` directly (e.g. from a Python shell), bring
+  the game window to front yourself first, or call `focus_window(hwnd)` before it.
 - **Pick regions that don't scroll/animate.** A region over live chat or a ticker will
   OCR whatever's there *at the instant of capture* — fine for a one-off read, useless for
   a stable "current value" reading. Point regions at static HUD elements (resource
   counters, health bars, etc.), not scrolling panels.
-- Client-area capture (`win32gui.GetClientRect` + `ClientToScreen`) excludes the title bar
-  automatically, so pixel coordinates in `calibrate.py` output line up directly with
-  `regions.json` boxes.
-- **DPI awareness must be set before any `win32gui` call or `mss` capture** (`capture.py`
-  does this at import time). Without it, this process is DPI-unaware and `win32gui`
-  returns coordinates in a virtualized logical-pixel space that doesn't match the physical
-  pixels `mss`/`SetCursorPos` use on a scaled display — silently misaligning every
-  screenshot and click by the scale factor (e.g. 1.25x at 125% scaling).
+- Client-area capture (`win32gui.GetClientRect` + `ClientToScreen`, in
+  `src/win/capture_win.py`) excludes the title bar automatically, so pixel coordinates in
+  `calibrate.py` output line up directly with `regions.json` boxes. macOS has no
+  equivalent client-rect-only query for another app's window, so `src/mac/capture_mac.py`
+  works against the whole window frame instead — boxes calibrated on Mac include the
+  title bar's height as an offset; this is just a different, equally consistent frame,
+  not a bug.
+- **DPI/scale awareness must be handled before any window-coordinate query or `mss`
+  capture, on both platforms.** On Windows, `src/win/capture_win.py` sets DPI awareness
+  at import time — without it, this process is DPI-unaware and `win32gui` returns
+  coordinates in a virtualized logical-pixel space that doesn't match the physical
+  pixels `mss`/`SetCursorPos` use on a scaled display, silently misaligning every
+  screenshot and click by the scale factor (e.g. 1.25x at 125% scaling). On macOS, the
+  equivalent issue is Retina backing scale: `CGWindowListCopyWindowInfo` bounds come back
+  in points, while `mss` and `CGEventPost` expect physical pixels and points respectively
+  — `src/mac/capture_mac.py`/`src/mac/input_control_mac.py` convert via
+  `NSScreen.backingScaleFactor()` at every boundary crossing. Don't "simplify away"
+  either conversion.
 - **A label can legitimately appear twice under one section** — e.g. `attribute_details.py`
   found ATK/DEF/INT each list "Components" once as a raw base value (e.g. `11,309`) and
   again as a separate bonus percentage (e.g. `20.00%`, confirmed against the game directly

@@ -34,8 +34,10 @@ not a capitalization check - an even earlier version used caps and silently
 merged every title-case section's rows into the wrong bucket.
 """
 import difflib
+import logging
 import re
 import time
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -43,31 +45,17 @@ from PIL import Image
 from capture import screenshot_region
 from input_control import click, drag
 from ocr import preprocess, pytesseract
+from profiles.ui_layout import get_layout
 
-HAMBURGER_ICON = (1645, 1385)  # on the ship detail view (Overview tab)
-DETAILS_TAB = (1475, 410)
-# Bottom was originally 1060, then 1150 - both times widened by eyeballing
-# position on the full downscaled screenshot, and both times still wrong: at
-# the list's true max-scroll rest position the last section's content
-# ("Chance to inflict Major Damage" + its Level/Technology sub-rows) actually
-# extends to y=1290, with the modal's own visible border at y=1335. 1150 was
-# cutting off "Level"/"Technology" entirely, not just trimming their margin.
-# This value came from zoom.py's 10px grid against calibration_raw.png, not
-# another eyeball guess - see CLAUDE.md on why that distinction matters here.
-TABLE_BOX = (650, 350, 1650, 1330)
-# Drag from a lower point to a higher one to scroll the list down (touch-style
-# swipe-up), both inside the table area and away from row edges/the header row.
-# The exact distance matters much less now than it did before image
-# stitching: _content_offset() measures how far the content actually moved
-# from real pixels rather than trusting this number, so it only needs to be
-# a reasonable seed for that search (see EXPECTED_SCROLL_OFFSET) - it no
-# longer has to simultaneously satisfy "enough overlap for OCR redundancy"
-# and "not so much overlap that stale content resurfaces," since there's no
-# cross-capture text merging left for that tradeoff to apply to.
-DRAG_FROM = (1000, 900)
-DRAG_TO = (1000, 550)
-EXPECTED_SCROLL_OFFSET = DRAG_FROM[1] - DRAG_TO[1]
+log = logging.getLogger(__name__)
+
 MAX_SCROLLS = 45  # smaller per-drag distance means more scrolls needed to reach the bottom
+# Per CLAUDE.md: when OCR misreads/drops something, look at the exact image it
+# read rather than guessing at preprocessing tweaks - every past OCR failure in
+# this repo turned out to be a bug in the crop/composite itself, not an engine
+# limitation. Saved unconditionally (cheap) so it's always available to
+# inspect after a run that comes back with missing/wrong sections.
+DEBUG_DIR = Path(__file__).resolve().parent.parent / "data"
 
 # Every sub-row label seen so far across HP/ATTACK/INT/DEF/Damage Reduction/
 # Chance to inflict Major Damage. Extend this if a new section introduces a
@@ -143,9 +131,23 @@ def _join_wrapped_lines(text: str) -> list[str]:
     First strips "Overview"/"Details" tab-bar text that psm 6 sometimes prepends
     to the first content line (they're both text blocks close together
     vertically) - left in place, that noise would itself look like a
-    no-trailing-number line and get wrongly joined onto real content below it."""
+    no-trailing-number line and get wrongly joined onto real content below it.
+
+    Also drops short all-lowercase-alpha lines: under psm 12 (sparse text,
+    see read_attribute_details), each header row's dropdown chevron icon
+    occasionally gets segmented as its own spurious garbage text block (seen
+    live as "vw"/"Ww") rather than being absorbed into the row it belongs to -
+    confirmed by inspecting the saved debug composite directly, not guessed.
+    Left in place, one of these preceding the very first header ("HP") merges
+    into its label and pushes the fuzzy-match ratio just below the
+    classification cutoff, silently dropping that header. Every real label in
+    this game starts with a capital letter (all-caps like HP/ATTACK, or
+    Title-Case) so a short run of only lowercase letters can never be real
+    content - safe to filter categorically rather than matching the exact
+    misread string, which isn't guaranteed to repeat next time."""
+    _ICON_GLYPH_NOISE = re.compile(r"^[a-z]{1,3}$")
     raw_lines = [_TAB_BAR_NOISE.sub("", l).strip() for l in text.splitlines()]
-    raw_lines = [l for l in raw_lines if l]
+    raw_lines = [l for l in raw_lines if l and not _ICON_GLYPH_NOISE.match(l)]
     joined: list[str] = []
     buffer = ""
     for line in raw_lines:
@@ -167,6 +169,7 @@ def _parse(text: str, data: dict[str, dict[str, str]], section: list[str | None]
 
         classified = _classify_label(label)
         if classified is None:
+            log.debug("Dropped unrecognized label %r (value %r)", label, value)
             continue  # unrecognized text, likely a mistimed/blurred capture - drop it
         kind, canonical = classified
         if kind == "subrow":
@@ -179,6 +182,33 @@ def _parse(text: str, data: dict[str, dict[str, str]], section: list[str | None]
                 # percentage rows so both survive as distinct entries; a label
                 # that only ever appears one way just ends up with one key.
                 key = f"{canonical} %" if value.endswith("%") else canonical
+                if key in data[section[0]] and data[section[0]][key] != value:
+                    # A sub-row label repeating WITH A DIFFERENT VALUE within
+                    # what's supposedly still the same section is a strong
+                    # signal that a section header was silently dropped by
+                    # OCR in between (this composite is tall enough that
+                    # Tesseract occasionally loses a whole header line even
+                    # though the exact same crop reads fine in isolation -
+                    # confirmed by direct comparison). Confirmed live: a
+                    # dropped "ATTACK" header let its own "Champions"/"Crew"
+                    # rows silently overwrite HP's real values with this
+                    # exact symptom. We can't recover the missing header's
+                    # name, but we can stop attributing further rows to the
+                    # wrong section - dropping is far safer than silently
+                    # corrupting one.
+                    #
+                    # A repeat with the SAME value is just this row being
+                    # OCR'd again from overlapping capture regions - harmless,
+                    # ignore rather than treat as a section boundary.
+                    log.warning(
+                        "%s: %r changed %r -> %r within same section - likely a "
+                        "dropped header, abandoning this section", section[0], key,
+                        data[section[0]][key], value,
+                    )
+                    section[0] = None
+                    continue
+                if key in data[section[0]]:
+                    continue
                 data[section[0]][key] = value
         else:
             data.setdefault(canonical, {})["_total"] = value
@@ -231,11 +261,10 @@ def validate_sections(data: dict[str, dict[str, str]]) -> dict[str, dict]:
 
         expected = (base_sum + pct_sum) if total_is_pct else base_sum * (1 + pct_sum / 100)
         tolerance = max(1.0, total * 0.005)  # displayed percentages are rounded to 2dp
-        results[section] = {
-            "expected": expected,
-            "actual": total,
-            "valid": abs(expected - total) <= tolerance,
-        }
+        valid = abs(expected - total) <= tolerance
+        if not valid:
+            log.debug("%s: total %s doesn't match sub-rows (expected %.2f)", section, total_str, expected)
+        results[section] = {"expected": expected, "actual": total, "valid": valid}
     return results
 
 
@@ -263,16 +292,15 @@ def heal_totals(data: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
         fields = data[section]
         expected = result["expected"]
         is_pct = fields["_total"].endswith("%")
-        fields["_total"] = f"{expected:.2f}%" if is_pct else f"{round(expected):,}"
+        healed = f"{expected:.2f}%" if is_pct else f"{round(expected):,}"
+        log.info("%s: healed total %r -> %r from sub-rows", section, fields["_total"], healed)
+        fields["_total"] = healed
         fields["_total_healed"] = "true"
     return data
 
 
-STRIP_Y = 180  # skip past the static "Overview/Details" tab bar at the top of TABLE_BOX
-
-
-def _content_offset(prev_img: Image.Image, curr_img: Image.Image,
-                     expected: int = EXPECTED_SCROLL_OFFSET, margin: int = 150) -> int:
+def _content_offset(prev_img: Image.Image, curr_img: Image.Image, table_tab_bar_height: int,
+                     expected: int, margin: int = 150) -> int:
     """How far curr_img's content has scrolled down relative to prev_img, in
     pixels - found by matching actual pixel content (a thin strip against a
     sliding window of prev_img) rather than trusting the drag gesture
@@ -281,9 +309,9 @@ def _content_offset(prev_img: Image.Image, curr_img: Image.Image,
     rather than the whole image, since the true answer is always close to
     it - a full search isn't needed and is slower.
 
-    The strip is sampled starting at STRIP_Y, not the very top of the crop:
-    TABLE_BOX's top ~150px is the "Overview/Details" tab bar, which is fixed
-    UI chrome that never scrolls - comparing that against itself always
+    The strip is sampled starting at table_tab_bar_height, not the very top of
+    the crop: the top of the table capture region is the "Overview/Details"
+    tab bar, which is fixed UI chrome that never scrolls - comparing that against itself always
     scored a perfect match at offset=0 regardless of how far the actual list
     content below it had moved, making this function report "no movement"
     on every call even when the list had clearly scrolled several sections
@@ -291,7 +319,7 @@ def _content_offset(prev_img: Image.Image, curr_img: Image.Image,
     prev = np.asarray(prev_img.convert("L"), dtype=np.int32)
     curr = np.asarray(curr_img.convert("L"), dtype=np.int32)
     strip_h = 80
-    curr_strip = curr[STRIP_Y:STRIP_Y + strip_h, :]
+    curr_strip = curr[table_tab_bar_height:table_tab_bar_height + strip_h, :]
 
     # Always search from 0, not expected-margin: at the true scroll-bottom
     # the frames are identical and the real answer is 0, which a window
@@ -300,41 +328,46 @@ def _content_offset(prev_img: Image.Image, curr_img: Image.Image,
     # the way to MAX_SCROLLS, produced a 17,000px-tall composite Tesseract
     # then refused to process at all).
     lo = 0
-    hi = min(prev.shape[0] - STRIP_Y - strip_h, expected + margin)
+    hi = min(prev.shape[0] - table_tab_bar_height - strip_h, expected + margin)
     best_offset, best_score = expected, None
     for offset in range(lo, hi + 1):
-        score = np.sum((prev[STRIP_Y + offset:STRIP_Y + offset + strip_h, :] - curr_strip) ** 2)
+        start = table_tab_bar_height + offset
+        score = np.sum((prev[start:start + strip_h, :] - curr_strip) ** 2)
         if best_score is None or score < best_score:
             best_score = score
             best_offset = offset
     return best_offset
 
 
-def _stitch_full_table(hwnd) -> Image.Image:
+def _stitch_full_table(hwnd, layout) -> Image.Image:
     """Scrolls through the whole list, splicing only the genuinely new bottom
     slice of each capture (per _content_offset) onto one growing composite
     image, so the whole table ends up as a single seamless image with each
     row appearing exactly once - no OCR text merging step needed at all."""
-    frame = screenshot_region(hwnd, TABLE_BOX)
+    frame = screenshot_region(hwnd, layout.table_box)
     parts = [frame]
 
     stalls = 0
-    for _ in range(MAX_SCROLLS):
-        drag(hwnd, *DRAG_FROM, *DRAG_TO)
+    for i in range(MAX_SCROLLS):
+        drag(hwnd, *layout.drag_from, *layout.drag_to)
         time.sleep(0.7)  # let scroll momentum/animation fully settle before capturing
-        next_frame = screenshot_region(hwnd, TABLE_BOX)
-        offset = _content_offset(frame, next_frame)
+        next_frame = screenshot_region(hwnd, layout.table_box)
+        offset = _content_offset(frame, next_frame, layout.table_tab_bar_height, layout.expected_scroll_offset)
+        log.debug("Scroll %d/%d: offset=%dpx", i + 1, MAX_SCROLLS, offset)
         if offset <= 5:
             stalls += 1
             # Same reasoning as the old text-based stall check: one
             # negligible-movement reading isn't reliable proof we've hit the
             # true bottom on its own. Two in a row is a much stronger signal.
-            if stalls >= 2:
+            if stalls >= 1:
+                log.debug("Reached scroll bottom after %d scroll(s)", i + 1)
                 break
         else:
             stalls = 0
             parts.append(next_frame.crop((0, frame.height - offset, next_frame.width, next_frame.height)))
         frame = next_frame
+    else:
+        log.warning("Hit MAX_SCROLLS (%d) without detecting a stall - composite may be incomplete", MAX_SCROLLS)
 
     composite = Image.new("RGB", (frame.width, sum(p.height for p in parts)))
     y = 0
@@ -344,16 +377,39 @@ def _stitch_full_table(hwnd) -> Image.Image:
     return composite
 
 
-def read_attribute_details(hwnd) -> dict[str, dict[str, str]]:
-    click(hwnd, *HAMBURGER_ICON)
-    time.sleep(0.6)
-    click(hwnd, *DETAILS_TAB)
-    time.sleep(0.6)
+def read_attribute_details(hwnd, name) -> dict[str, dict[str, str]]:
+    log.info("%s: collecting Attribute Details", name)
+    layout = get_layout(hwnd)
+    click (hwnd, *layout.overview_tab)
+    time.sleep(0.2)
+    click(hwnd, *layout.hamburger_icon)
+    time.sleep(0.2)
+    click(hwnd, *layout.details_tab)
+    time.sleep(0.2)
 
-    composite = _stitch_full_table(hwnd)
-    text = pytesseract.image_to_string(preprocess(composite, upscale=2), config="--psm 6").strip()
+    composite = _stitch_full_table(hwnd, layout)
+    DEBUG_DIR.mkdir(parents=True, exist_ok=True)
+    composite.save(DEBUG_DIR / "_debug_attribute_stitch.png")
+    log.debug("Stitched composite: %dx%d", composite.width, composite.height)
+
+    # psm 6 was silently dropping whole section-header lines (e.g. "HP
+    # 1,029,897") once the composite grew past a couple hundred px tall, even
+    # though the exact same crop OCR'd correctly in isolation - psm 4 fixed
+    # that at the time, but on a full multi-section composite (2700+px tall,
+    # confirmed via the saved debug composite) psm 4 regressed to the same
+    # failure: it dropped every section header except the very first,
+    # confirmed by comparing psm 4/6 output against psm 12 on the identical
+    # saved image - the header text wasn't misread, it just wasn't detected
+    # as text at all (each header row sits in its own visually boxed/shaded
+    # region, which apparently confuses layout modes that assume a uniform
+    # text column). psm 12 (sparse text) treats each visual block
+    # independently and recovered every header on that same comparison.
+    text = pytesseract.image_to_string(preprocess(composite, upscale=2), config="--psm 12").strip()
+    (DEBUG_DIR / "_debug_attribute_ocr.txt").write_text(text, encoding="utf-8")
 
     data: dict[str, dict[str, str]] = {}
     section: list[str | None] = [None]  # no cross-capture concern - this is one linear pass
     _parse(text, data, section)
-    return heal_totals(data)
+    result = heal_totals(data)
+    log.info("%s: read %d section(s): %s", name, len(result), list(result))
+    return result

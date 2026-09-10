@@ -7,15 +7,19 @@ Usage:
 """
 import csv
 import json
+import logging
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 from capture import find_window, screenshot_region
+from display_profiles import ProfileKey, select_profile
+from logging_setup import configure_logging
 from ocr import read_text
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+log = logging.getLogger(__name__)
 
 
 def load_config(path: str) -> dict:
@@ -23,10 +27,19 @@ def load_config(path: str) -> dict:
         return json.load(f)
 
 
+def _load_region_profiles(config: dict) -> dict[ProfileKey, dict]:
+    profiles: dict[ProfileKey, dict] = {}
+    for p in config["profiles"]:
+        size = tuple(p["window_size"]) if p.get("window_size") else (0, 0)
+        profiles[(p["platform"], size)] = p["regions"]
+    return profiles
+
+
 def poll_loop(config_path: str, interval_seconds: float = 2.0) -> None:
     config = load_config(config_path)
     hwnd = find_window(config["window_title"])
-    regions = config["regions"]
+    regions = select_profile(hwnd, _load_region_profiles(config), "regions")
+    log.debug("Loaded %d region(s) from %s: %s", len(regions), config_path, list(regions))
 
     DATA_DIR.mkdir(exist_ok=True)
     log_path = DATA_DIR / "log.csv"
@@ -39,7 +52,7 @@ def poll_loop(config_path: str, interval_seconds: float = 2.0) -> None:
         if is_new_log:
             writer.writerow(["timestamp", "region", "value"])
 
-        print(f"Tracking {list(regions)} — polling every {interval_seconds}s. Ctrl+C to stop.")
+        log.info("Tracking %s — polling every %ss. Ctrl+C to stop.", list(regions), interval_seconds)
         try:
             while True:
                 for name, spec in regions.items():
@@ -47,21 +60,23 @@ def poll_loop(config_path: str, interval_seconds: float = 2.0) -> None:
                     digits_only = spec.get("digits_only", False)
                     image = screenshot_region(hwnd, box)
                     value = read_text(image, digits_only=digits_only)
+                    log.debug("Polled %s: %r", name, value)
 
                     if value != state[name]:
                         timestamp = datetime.now(timezone.utc).isoformat()
                         writer.writerow([timestamp, name, value])
                         f.flush()
-                        print(f"[{timestamp}] {name}: {state[name]!r} -> {value!r}")
+                        log.info("[%s] %s: %r -> %r", timestamp, name, state[name], value)
                         state[name] = value
 
                 time.sleep(interval_seconds)
         except KeyboardInterrupt:
-            print("\nStopped.")
+            log.info("Stopped.")
 
 
 if __name__ == "__main__":
+    configure_logging()
     if len(sys.argv) < 2:
-        print(__doc__)
+        log.info(__doc__)
         sys.exit(1)
     poll_loop(sys.argv[1])
