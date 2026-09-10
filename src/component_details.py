@@ -52,14 +52,27 @@ def _read_stats(hwnd, layout) -> dict[str, str]:
     return stats
 
 
+def _normalize_name(name: str) -> str:
+    # Component names are plain ASCII, "<Base> - <Part>" (e.g. "Thor Gen6 -
+    # Control Cube"), using a regular hyphen. OCR occasionally injects a
+    # stray non-ASCII glyph that isn't part of the real text - either glued
+    # onto a word (e.g. "Gen6é - Control Cube": the "-" itself already
+    # read correctly, "é" is pure extra noise, confirmed against a live
+    # screenshot of this exact component showing plain "Thor Gen6 - Control
+    # Cube") or trailing alone from a small icon at the box's right edge
+    # (e.g. "Name —"). Deleting stray non-ASCII characters outright
+    # recovers the correct text in both cases.
+    name = re.sub(r"[^\x00-\x7F]", "", name)
+    name = re.sub(r"\s+", " ", name)
+    return name.strip(" -")
+
+
 def read_component(hwnd, layout) -> dict:
-    # Trailing "—" (em dash) on some reads is noise from a small lock/lvl-max
-    # icon at the box's right edge, not part of the name - strip it.
     name_box = require_field(layout.component_name_box, "component_name_box")
     rarity_box = require_field(layout.component_rarity_box, "component_rarity_box")
     level_box = require_field(layout.component_level_box, "component_level_box")
     set_bonus_box = require_field(layout.component_set_bonus_box, "component_set_bonus_box")
-    name = read_text(screenshot_region(hwnd, name_box), upscale=3).rstrip(" —")
+    name = _normalize_name(read_text(screenshot_region(hwnd, name_box), upscale=3))
     rarity = read_text(screenshot_region(hwnd, rarity_box), upscale=3).rstrip(" _")
     level = read_text(screenshot_region(hwnd, level_box), upscale=3)
     return {
@@ -85,14 +98,14 @@ def read_all_components(hwnd, name) -> list[dict]:
     screenshot_window(hwnd).save(DEBUG_DIR / "_debug_before_component_tab_click.png")
 
     click(hwnd, *layout.component_tab)
-    time.sleep(0.6)
+    time.sleep(0.2)
     screenshot_window(hwnd).save(DEBUG_DIR / "_debug_after_component_tab_click.png")
     click(hwnd, *require_field(layout.first_grid_icon, "first_grid_icon"))  # enter the detail view for the first time
-    time.sleep(0.6)
+    time.sleep(0.2)
 
     components = []
     for position in require_field(layout.thumbnail_positions, "thumbnail_positions"):
         click(hwnd, *position)
-        time.sleep(0.6)
+        time.sleep(0.2)
         components.append(read_component(hwnd, layout))
     return components

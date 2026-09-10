@@ -151,7 +151,7 @@ _LAYOUT_PROFILES: dict[ProfileKey, UILayout] = {
         # attribute_details.py measures actual scroll offset from pixel
         # content rather than trusting this number.
         drag_from=(640, 650),
-        drag_to=(640, 470),
+        drag_to=(640, 400),
         attribute_close_button=(814, 176),  # confirmed live: closes the Attribute Details modal
         # Confirmed via calibrate.py zoom against a live ship detail view -
         # the three tab labels' x-centers along the shared tab bar (y=800).
@@ -170,8 +170,9 @@ _LAYOUT_PROFILES: dict[ProfileKey, UILayout] = {
         component_set_bonus_box=(460, 610, 720, 620),
         # Previously promotion_details.py's own flat constants - moved here
         # for consistency, unchanged in value.
-        promotion_badge_box=(590, 325, 680, 425),
-        promote_button_box=(480, 780, 780, 750),
+        # promotion_badge_box=(590, 325, 680, 425),
+        promotion_badge_box=(540, 310, 600, 370),
+        promote_button_box=(480, 680, 780, 750),
     )
 }
 

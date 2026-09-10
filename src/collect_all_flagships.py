@@ -97,7 +97,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
             # rendering the name yet - confirmed on a live run where a real
             # ship's name came back empty right after arriving. One retry
             # after a bit more time is enough.
-            time.sleep(0.5)
+            time.sleep(0.3)
             name = _read_ship_name(hwnd, layout)
 
         if not name or name in results:
@@ -123,8 +123,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
             # slot costs one cheap OCR call instead of a full failed scan.
             break
 
-        print(f"{name}: collecting Attribute Details")
-        data = read_attribute_details(hwnd)
+        data = read_attribute_details(hwnd, name)
         validation = validate_sections(data)
         results[name] = data
 
@@ -135,7 +134,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         # closes safely with it. layout.attribute_close_button is kept
         # unused as a rollback if that turns out to be wrong on a wider test.
         press_key(hwnd, "esc")  # close the attribute overlay
-        time.sleep(0.6)
+        time.sleep(0.2)
 
         components = read_all_components(hwnd, name)  # leaves the last component's detail view open
 
@@ -145,7 +144,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         # directly (a top-level tab switch, not a nested sub-view, so no
         # back() is needed first) to read the level badge.
         back(hwnd)
-        time.sleep(0.6)
+        time.sleep(0.2)
         promotion = read_promotion(hwnd)
 
         out_path = DATA_DIR / f"{name}.json"
@@ -159,7 +158,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
             )
 
         click(hwnd, *layout.right_arrow)  # page to the next ship, still on the Promote tab
-        time.sleep(0.6)
+        time.sleep(0.2)
 
     # Loop exits with the view on the wrapped-around ship's Promote tab (see
     # the note above) - one back() from there reaches the fleet list.

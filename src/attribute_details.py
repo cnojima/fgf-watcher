@@ -348,7 +348,7 @@ def _stitch_full_table(hwnd, layout) -> Image.Image:
             # Same reasoning as the old text-based stall check: one
             # negligible-movement reading isn't reliable proof we've hit the
             # true bottom on its own. Two in a row is a much stronger signal.
-            if stalls >= 2:
+            if stalls >= 1:
                 break
         else:
             stalls = 0
@@ -363,14 +363,15 @@ def _stitch_full_table(hwnd, layout) -> Image.Image:
     return composite
 
 
-def read_attribute_details(hwnd) -> dict[str, dict[str, str]]:
+def read_attribute_details(hwnd, name) -> dict[str, dict[str, str]]:
+    print(f"{name}: collecting Attribute Details")
     layout = get_layout(hwnd)
     click (hwnd, *layout.overview_tab)
-    time.sleep(0.3)
+    time.sleep(0.2)
     click(hwnd, *layout.hamburger_icon)
-    time.sleep(0.3)
+    time.sleep(0.2)
     click(hwnd, *layout.details_tab)
-    time.sleep(0.3)
+    time.sleep(0.2)
 
     composite = _stitch_full_table(hwnd, layout)
     DEBUG_DIR.mkdir(parents=True, exist_ok=True)
