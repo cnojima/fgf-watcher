@@ -26,6 +26,7 @@ from nav import goto, back
 from ocr import preprocess, pytesseract
 from attribute_details import read_attribute_details, validate_sections
 from component_details import read_all_components
+from overview_details import read_ship_element
 from promotion_details import read_promotion
 from flagships import MAX_SHIPS
 from profiles.ui_layout import get_layout
@@ -133,6 +134,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
             log.info("%s: no Level badge found - locked slot, stopping", name)
             break
 
+        element = read_ship_element(hwnd, layout)
         data = read_attribute_details(hwnd, name)
         validation = validate_sections(data)
         invalid = [s for s, r in validation.items() if not r["valid"]]
@@ -165,7 +167,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(
                 {
-                    "ship": name, "attributes": data, "validation": validation,
+                    "ship": name, "element": element, "attributes": data, "validation": validation,
                     "components": components, "promotion": promotion,
                 },
                 f, indent=2,

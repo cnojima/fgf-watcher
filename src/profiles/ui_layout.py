@@ -64,6 +64,9 @@ class UILayout:
     promotion_badge_box: tuple[int, int, int, int] | None = None  # current-level triangle badge, Promote tab
     promote_button_box: tuple[int, int, int, int] | None = None   # PROMOTE/PROMOTED button, same tab
 
+    # overview_details.py. Same "None until calibrated" rule as above.
+    element_icon_box: tuple[int, int, int, int] | None = None  # element-type badge, top-left of Overview tab
+
     @property
     def expected_scroll_offset(self) -> int:
         return self.drag_from[1] - self.drag_to[1]
@@ -173,6 +176,15 @@ _LAYOUT_PROFILES: dict[ProfileKey, UILayout] = {
         # promotion_badge_box=(590, 325, 680, 425),
         promotion_badge_box=(540, 310, 600, 370),
         promote_button_box=(480, 680, 780, 750),
+        # Confirmed via calibrate.py zoom against live Gram/Demerzel Overview
+        # tabs - the element-type badge directly under the ship name. Matched
+        # via icon_match.py against src/icons/elements/ rather than OCR'd -
+        # it's a pictographic icon with no text in it. An initial (360, 100,
+        # 390, 130) (read off the gridded calibration.png by eye) clipped the
+        # badge on its right/bottom edge - confirmed by comparing the actual
+        # crop against a reference icon side by side, not just a bad match
+        # score alone (see CLAUDE.md: never trust a coordinate without zoom).
+        element_icon_box=(362, 96, 398, 132),
     )
 }
 
