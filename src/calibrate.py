@@ -13,12 +13,11 @@ few percent of visual misjudgment on a 2000+px-wide image is a lot of real
 pixels. Always confirm a coordinate with `zoom` before clicking it, rather than
 eyeballing the full shot.
 
-`shot` brings the game window to the foreground itself (via focus_window())
-before capturing, since screenshot_window() refuses otherwise. On Windows this
-means `shot` now goes through the same SetForegroundWindow path as click()/
-press_key() - if the game's elevated (as Administrator) and this needs
-elevation too where it didn't before, run it via run_admin.ps1 like any other
-input-driving script. Not yet confirmed live on Windows.
+`shot` waits `delay` seconds (default 3) before capturing. screenshot_window()
+refuses to capture unless the game is the foreground window, but running this
+command from a terminal makes the *terminal* the foreground window the instant
+it launches - the delay is time to alt-tab back to the game before the actual
+capture happens, so this never needs to steal focus from whatever's on screen.
 """
 import sys
 import time
@@ -26,8 +25,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from capture import describe_display_scale, find_window, get_window_rect, list_windows, screenshot_window
-from input_control import focus_window
+from capture import find_window, list_windows, screenshot_window
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -45,7 +43,6 @@ def _draw_grid(img: Image.Image, step: int) -> Image.Image:
 
 def save_gridded_screenshot(title_substring: str, grid_step: int = 50) -> Path:
     hwnd = find_window(title_substring)
-    focus_window(hwnd)  # screenshot_window refuses unless hwnd is frontmost
     img = screenshot_window(hwnd).convert("RGB")
     _draw_grid(img, grid_step)
 
@@ -97,16 +94,14 @@ if __name__ == "__main__":
             sys.exit(1)
         delay = int(sys.argv[3]) if len(sys.argv) > 3 else 3
         hwnd = find_window(sys.argv[2])
-        focus_window(hwnd)  # screenshot_window refuses unless hwnd is frontmost
+        print(f"Capturing in {delay}s - switch focus to the game window now...")
+        time.sleep(delay)
         raw = screenshot_window(hwnd).convert("RGB")
         DATA_DIR.mkdir(exist_ok=True)
         raw.save(DATA_DIR / "calibration_raw.png")
         gridded = raw.copy()
         _draw_grid(gridded, 50)
         gridded.save(DATA_DIR / "calibration.png")
-        rect = get_window_rect(hwnd)
-        print(f"Profile key for this window: ({sys.platform!r}, ({rect.width}, {rect.height}))")
-        print(describe_display_scale(hwnd))
         print(f"Saved {DATA_DIR / 'calibration.png'}")
         print("Open it and read off approximate pixel coordinates (red gridlines every 50px), "
               "then run `zoom X Y` to confirm before clicking anything.")
