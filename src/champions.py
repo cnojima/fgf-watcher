@@ -32,7 +32,7 @@ from capture import screenshot_region
 from input_control import click
 from nav import back
 from ocr import preprocess, pytesseract
-from profiles.champion_layout import ChampionLayout, get_champion_layout
+from profiles.champion_layout import ChampionLayout, get_champion_layout, require_field
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ def _card_state(hwnd, layout: ChampionLayout, col: int, row: int) -> str:
     guessed). Retrying at a couple of different upscale factors recovers
     real content without needing a single "right" preprocessing setting."""
     cx, cy = layout.grid_columns[col], layout.grid_rows[row]
-    l, t, r, b = layout.card_status_offset
+    l, t, r, b = require_field(layout.card_status_offset, "card_status_offset")
     box = (cx + l, cy + t, cx + r, cy + b)
     img = screenshot_region(hwnd, box)
     for upscale in (3, 6, 8):

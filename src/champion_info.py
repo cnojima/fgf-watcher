@@ -22,6 +22,7 @@ attribute_details.py's KNOWN_SUBROW_LABELS "Construction" entry. Expect
 icon_match to return None (logged as a warning) for any other type until
 more reference icons are added.
 """
+import difflib
 import logging
 import re
 
@@ -30,8 +31,16 @@ from capture import screenshot_region
 from icon_match import match_icon
 from ocr import read_text
 from profiles.champion_layout import ChampionLayout
+from profiles.notifications import dismiss_if_present
 
 log = logging.getLogger(__name__)
+
+# Confirmed by the user: every champion's quality is one of exactly these
+# two values - a closed vocabulary, so fuzzy-matched the same way
+# champion_weapon.py matches element/type words rather than trusted as
+# free-text OCR. A raw OCR misread (e.g. a stray leading character) no
+# longer needs perfect text, just something close enough to one of these.
+_QUALITIES = ("legendary", "epic")
 
 # Maps common EasyOCR letter/digit confusions back to digits - only safe to
 # apply to a field known to be purely numeric (like a level number).
@@ -58,11 +67,30 @@ def _clean_leading_noise(text: str) -> str:
     return re.sub(r"^[^A-Za-z0-9]*[A-Za-z]{0,2}\s+(?=[A-Z0-9])", "", text.strip())
 
 
+def _match_quality(text: str) -> str | None:
+    for word in re.findall(r"[A-Za-z]+", text.upper()):
+        match = difflib.get_close_matches(word, [q.upper() for q in _QUALITIES], n=1, cutoff=0.7)
+        if match:
+            return match[0].lower()
+    return None
+
+
 def read_info(hwnd, layout: ChampionLayout) -> dict:
     """Assumes the champion's Info tab is currently showing."""
-    name = read_text(screenshot_region(hwnd, layout.name_box), upscale=3)
-    title = read_text(screenshot_region(hwnd, layout.title_box), upscale=3)
-    quality = _clean_leading_noise(read_text(screenshot_region(hwnd, layout.quality_box), upscale=3))
+    # The global notification banner (profiles/notifications.py) can cover
+    # name_box/title_box right as this tab opens - confirmed live corrupting
+    # a real champion name. Dismiss it before reading anything.
+    dismiss_if_present(hwnd)
+
+    # Tesseract misreads this stylized font the same way it does the ship
+    # name/"FLAGSHIP" title (see ocr_easy.py's docstring) - confirmed live
+    # across a full roster collection: "DOUG ROCKWELL" -> "'Dove ROCKWE!",
+    # "KILLER BEE" -> "KILLER BEF", plausible near-misses rather than random
+    # noise, the signature of a font/engine mismatch rather than a timing
+    # issue. Switched to EasyOCR, same fix already used for ship names.
+    name = ocr_easy.read_text(screenshot_region(hwnd, layout.name_box))
+    title = ocr_easy.read_text(screenshot_region(hwnd, layout.title_box))
+    quality = _match_quality(read_text(screenshot_region(hwnd, layout.quality_box), upscale=3))
     element = match_icon(screenshot_region(hwnd, layout.element_icon_box), "elements")
     champion_type = match_icon(screenshot_region(hwnd, layout.type_icon_box), "champion_types")
     level = _read_level(hwnd, layout)

@@ -12,6 +12,9 @@ yet; add one the same way profiles/ui_layout.py's win32 profile was built.
 from dataclasses import dataclass
 
 from display_profiles import ProfileKey, select_profile
+from profiles.ui_layout import require_field
+
+__all__ = ["ChampionLayout", "get_champion_layout", "require_field"]
 
 
 @dataclass(frozen=True)
@@ -35,15 +38,6 @@ class ChampionLayout:
     grid_columns: tuple[int, int, int, int, int]
     grid_rows: tuple[int, ...]
 
-    # Offset (left, top, right, bottom) from a card's (column, row) center
-    # to its bottom status-text region, used to tell a locked/unrecruited
-    # card (shows "N/40" - a slash) from an unlocked one (shows "Level NNN"
-    # plus star pips, no slash) - confirmed live: OCR of this region with a
-    # "0123456789/" whitelist reads a clean "0/40" on a locked card and
-    # digit noise with no "/" on an unlocked one. Checking for "/" alone is
-    # enough; no need to parse the unlocked card's noisy digit soup at all.
-    card_status_offset: tuple[int, int, int, int]
-
     # --- Detail view: Info tab ---
     name_box: tuple[int, int, int, int]
     title_box: tuple[int, int, int, int]  # flavor subtitle under the name (e.g. "GOVERNOR") - not champion type
@@ -54,16 +48,6 @@ class ChampionLayout:
     level_box: tuple[int, int, int, int]
     power_box: tuple[int, int, int, int]
     weapon_badge_click: tuple[int, int]  # opens the equipped-weapon detail page; shows a "+" placeholder if none equipped
-    # Pixel-color fingerprint for the "+" no-weapon-equipped placeholder
-    # (points, expected RGB) - checked BEFORE ever clicking
-    # weapon_badge_click, per explicit instruction not to click into that
-    # placeholder at all. Confirmed live: the placeholder's ring is a
-    # consistent dark teal (61,103,88-90) at both points regardless of
-    # champion, while a real equipped weapon's badge art varies widely
-    # there (confirmed distinct on a separate champion: 127-151 range) -
-    # same pixel-fingerprint approach as profiles/fingerprints.py's screen
-    # detection, just for a widget instead of a whole screen.
-    weapon_badge_empty_fingerprint: tuple[tuple[int, int, tuple[int, int, int]], ...]
 
     # --- Attribute Details modal (hamburger icon, bottom-right of the
     # portrait) - confirmed to reuse the exact same click position and
@@ -78,55 +62,7 @@ class ChampionLayout:
     attribute_modal_box: tuple[int, int, int, int]  # the list content area, either tab
 
     # --- Weapon detail page (opened via weapon_badge_click) ---
-    weapon_name_box: tuple[int, int, int, int]
-    weapon_element_type_box: tuple[int, int, int, int]  # plain-text "KINETIC" / "ATTACK" pair, unlike the icon-only Info tab badges
     weapon_level_box: tuple[int, int, int, int]
-    weapon_stats_box: tuple[int, int, int, int]
-    # Confirmed live: this list doesn't fit in weapon_stats_box's visible
-    # height (9 rows total, ~5 visible) and is drag-scrollable, same as the
-    # ship attribute table - see scroll_stitch.py. No static header chrome
-    # inside the box itself (unlike the ship table's tab bar), so the
-    # stitching call uses static_header_height=0.
-    #
-    # Drag distance deliberately kept short (~30px) rather than matching a
-    # full "page" scroll: scroll_stitch.content_offset can only measure an
-    # offset up to (box_height - strip_h), and strip_h=80 is fixed to suit
-    # the much taller ship table. weapon_stats_box is only 115px tall, so
-    # a 100px drag (what a naive "drag most of the box" choice would use)
-    # is mathematically unmeasurable - confirmed live: it silently capped
-    # every measurement at ~15-21px, causing the stitch to splice in tiny
-    # slivers, falsely detect a stall, and skip most of the list (missing
-    # "POWER" and every Champion stat row) rather than raising any error.
-    # A 30px drag stays safely under the 35px ceiling this box's height
-    # allows.
-    weapon_stats_drag_from: tuple[int, int]
-    weapon_stats_drag_to: tuple[int, int]
-    # This page comes in two variants sharing the exact same name/badge/
-    # level/stats field positions above, differing only in what's below the
-    # stats and how they close - confirmed live the hard way: a "Select
-    # Weapon" browse variant (multiple owned weapons, an EQUIP button)
-    # closes via an X button at a totally different position than the
-    # simple single-weapon preview's back-arrow (champion_layout doesn't
-    # have its own separate close position for that one - it's the shared
-    # champion detail view's back arrow). Calling the wrong one silently
-    # fails to close the page - confirmed live: it cascaded into repeatedly
-    # misreading whatever weapon was left on screen for every subsequent
-    # champion in a batch run, since nothing verified the close succeeded.
-    # This box's text ("Select Weapon") is present only on that variant -
-    # see champion_weapon.close_weapon_page.
-    weapon_select_list_label_box: tuple[int, int, int, int]
-    weapon_select_list_close: tuple[int, int]
-
-    # The two "Lvl N" badges next to the weapon's Level bar (space combat
-    # bonus, ground combat bonus) - confirmed live: each is an independent
-    # toggle, not a tab switcher. Clicking one while the OTHER is already
-    # open just closes that other one instead of switching to the clicked
-    # one's content - confirmed by direct comparison of before/after
-    # screenshots. Read each with a full open -> read -> close cycle before
-    # touching the other one, rather than clicking straight from one to the
-    # next. Order: (space combat icon, ground combat icon).
-    weapon_bonus_icons: tuple[tuple[int, int], tuple[int, int]]
-    weapon_bonus_info_box: tuple[int, int, int, int]
 
     # --- Bottom tab bar: Info / Ability / Star Level ---
     info_tab: tuple[int, int]
@@ -160,9 +96,58 @@ class ChampionLayout:
     ability_scroll_drag_from: tuple[int, int]
     ability_scroll_drag_to: tuple[int, int]
 
+    # Not yet calibrated for every profile - default None rather than a
+    # guessed value, so an uncalibrated platform fails loudly (via
+    # require_field, same helper profiles/ui_layout.py's UILayout uses for
+    # its own not-yet-calibrated sub-view fields) instead of silently
+    # misclicking with a wrong-scale coordinate. Must stay after every field
+    # above without a default (dataclass field-order rule).
+    #
+    # Offset (left, top, right, bottom) from a card's (column, row) center to
+    # its bottom status-text region, used to tell a locked/unrecruited card
+    # (shows "N/40" - a slash) from an unlocked one (shows "Level NNN" plus
+    # star pips, no slash) - see champions.py._card_state.
+    card_status_offset: tuple[int, int, int, int] | None = None
+
+    # Pixel-color fingerprint VARIANTS for the "+" no-weapon-equipped
+    # placeholder (each a tuple of (x, y, expected RGB) points; a badge
+    # matches "empty" if ALL points of ANY ONE variant line up) - checked
+    # BEFORE ever clicking weapon_badge_click, per explicit instruction not
+    # to click into that placeholder at all. Multiple variants because this
+    # ring's color isn't universal - see champion_weapon.has_weapon_equipped.
+    weapon_badge_empty_fingerprint: tuple[tuple[tuple[int, int, tuple[int, int, int]], ...], ...] | None = None
+
+    # --- Weapon detail page fields below: name/element-type/stats boxes,
+    # the stats scroll drag, the "Select Weapon" browse-variant close
+    # controls, and the two bonus-badge fields. See champion_weapon.py. ---
+    weapon_name_box: tuple[int, int, int, int] | None = None
+    weapon_element_type_box: tuple[int, int, int, int] | None = None  # plain-text "KINETIC" / "ATTACK" pair, unlike the icon-only Info tab badges
+    weapon_stats_box: tuple[int, int, int, int] | None = None
+    weapon_stats_drag_from: tuple[int, int] | None = None
+    weapon_stats_drag_to: tuple[int, int] | None = None
+    weapon_select_list_label_box: tuple[int, int, int, int] | None = None
+    weapon_select_list_close: tuple[int, int] | None = None
+    weapon_bonus_icons: tuple[tuple[int, int], tuple[int, int]] | None = None
+    weapon_bonus_info_box: tuple[int, int, int, int] | None = None
+
+    # Pixel-color fingerprint (points, expected RGB) for the "MAX-LEVEL
+    # PREVIEW" button's inactive/outlined styling on a maxed weapon's detail
+    # page - a structurally different layout from the plain single-weapon
+    # preview and "Select Weapon" browse variants documented above (same
+    # "one screen, two layouts" pattern as promotion_details.py's maxed-ship
+    # badge - see CLAUDE.md). Sampled from two points inside the button's
+    # gold-orange outline/text (a border corner and the "L" in "LEVEL"),
+    # both confirmed live to read the same (213,155,58) - not yet compared
+    # against how this same button renders for a non-maxed weapon (would
+    # need a champion with an upgradeable, non-signature weapon open to
+    # confirm the colors actually differ there).
+    weapon_maxed_fingerprint: tuple[tuple[int, int, tuple[int, int, int]], ...] | None = None
+
     @property
     def weapon_stats_expected_scroll_offset(self) -> int:
-        return self.weapon_stats_drag_from[1] - self.weapon_stats_drag_to[1]
+        drag_from = require_field(self.weapon_stats_drag_from, "weapon_stats_drag_from")
+        drag_to = require_field(self.weapon_stats_drag_to, "weapon_stats_drag_to")
+        return drag_from[1] - drag_to[1]
 
     @property
     def ability_expected_scroll_offset(self) -> int:
@@ -184,7 +169,13 @@ _CHAMPION_LAYOUT_PROFILES: dict[ProfileKey, ChampionLayout] = {
         level_box=(605, 622, 675, 662),  # digits only - excludes the "Level" label line above (see champion_info._read_level)
         power_box=(600, 668, 700, 690),
         weapon_badge_click=(400, 195),
-        weapon_badge_empty_fingerprint=((378, 195, (61, 103, 88)), (422, 195, (61, 103, 90))),
+        # Only one variant confirmed on darwin so far (see this field's own
+        # comment above for why win32 needed more than one) - Lucius
+        # Pullo's ring read this same teal regardless of point. Not yet
+        # tested against an EPIC-quality champion's empty badge here the
+        # way win32's Klara case was; if one turns up reading a different
+        # color, add it as a second variant the same way win32 did.
+        weapon_badge_empty_fingerprint=(((378, 195, (61, 103, 88)), (422, 195, (61, 103, 90))),),
         hamburger_icon=(822, 722),
         space_combat_tab=(537, 227),
         ground_combat_tab=(742, 227),
@@ -220,6 +211,189 @@ _CHAMPION_LAYOUT_PROFILES: dict[ProfileKey, ChampionLayout] = {
         ability_scroll_box=(463, 500, 817, 678),
         ability_scroll_drag_from=(640, 640),
         ability_scroll_drag_to=(640, 570),
+    ),
+    # Confirmed live via calibrate.py zoom against a running game (not
+    # eyeballed) at this exact window size - keyed by the real size rather
+    # than a (0,0) fallback sentinel, unlike ui_layout.py's legacy win32
+    # profile (see display_profiles.py for why that distinction matters).
+    ("win32", (2560, 1600)): ChampionLayout(
+        champion_grid_icon=(1889, 1505),  # "Champion" icon in the base-view bottom bar
+        # Column pitch confirmed uniform at 205px via background-gap
+        # detection at both ends of the row (not eyeballed).
+        #
+        # Row y-centers: an initial pass eyeballed these off one gridded
+        # screenshot at ~295-298px pitch for rows 1-3 - looked plausible, and
+        # clicking these values did successfully open cards (huge click
+        # tolerance on a whole card hides a lot of imprecision). But that
+        # imprecision broke card_status_offset (below), which needs real
+        # accuracy: enumerate_grid()/_card_state() using that pitch correctly
+        # read row 1 but silently misread most of rows 2-3 as "empty" (no
+        # exception - a false negative that looks identical to "no more
+        # champions here"), confirmed live in a batch scan that only
+        # processed 3 of 12 remaining roster positions before finishing with
+        # no error. Re-measured via tight zooms (radius <=150 - see
+        # card_status_offset's note on why radius matters) directly on each
+        # row's own "165"+pips status bar (a fixed screen element, unlike
+        # the card art) - actual pitch is a uniform ~378px for rows 1-3, not
+        # ~295-298px. Values here are each row's status-bar vertical center;
+        # row 4 (single locked/next-tier card, no status bar at all - see
+        # card_status_offset) is instead its portrait's vertical center,
+        # measured the same way.
+        grid_columns=(850, 1055, 1260, 1465, 1670),
+        grid_rows=(440, 817, 1195, 1335),
+        # Confirmed live: an initial box spanning the full icon+digits+pips
+        # bar came back completely empty from OCR at every upscale tried
+        # (3/6/8) despite the crop being visibly correct - the circular
+        # weapon-type icon graphic included above the digits was confusing
+        # psm 7 (expects one line of text, not a graphic+text mix), not an
+        # OCR engine limitation (see CLAUDE.md: capture evidence before
+        # tuning). Narrowing the box to just the digit/pip row (excluding
+        # the icon) fixed it.
+        #
+        # This offset is now measured relative to grid_rows' corrected,
+        # per-row digit-bar centers above (not a single row's card center
+        # extrapolated to the others, which is what broke rows 2-3 - see
+        # grid_rows' note). Confirmed live reading "165" cleanly on rows 1-3
+        # with this offset. Row 4's card has no status bar at all (a locked/
+        # next-tier preview, matching the pattern champions.py's docstring
+        # already documents) - this box lands on blank card background
+        # there, correctly reading as "empty".
+        #
+        # General lesson from this session: calibrate.py zoom's labels
+        # become unreliable to read by eye above roughly radius 200-250 (text
+        # crowds together at this game's font size) - this bit both this
+        # field and several Info-tab boxes earlier in this profile. Only
+        # trust wider zooms for rough click targets (a whole card, tolerant
+        # of 100+px error), never for a tight OCR/pixel-fingerprint box.
+        card_status_offset=(-70, -30, 20, 30),
+        # name_box/title_box/element_icon_box/type_icon_box/weapon_badge_click
+        # were all originally derived from one zoom crop (radius 400) whose
+        # labels were too crowded to read reliably - confirmed live the hard
+        # way: weapon_badge_click at the old (610,680) landed ~330px below the
+        # actual badge, which is why clicking it never opened the weapon page
+        # (not a game-version difference, as first assumed - see
+        # champion_weapon.py's docstring for the corrected story). A first
+        # re-measurement attempt (radius 350, on a second champion, Killer
+        # Bee) turned out to have the SAME crowded-label problem for
+        # name_box/title_box/element_icon_box/type_icon_box (its
+        # weapon_badge_click reading happened to still land correctly, cross-
+        # confirmed against a second, radius-180 zoom below). Radius ~400 and
+        # ~350 both proved unreliable for reading text/box edges here - only
+        # trust zoom crops at radius <=200 for this kind of precise boundary
+        # reading; wider crops are fine for eyeballing rough click targets
+        # (e.g. a whole card) where the tolerance is huge. Final values below
+        # are all from radius-150-180 zooms on Zora Domini.
+        # quality_box/star_level_pips_box/level_box/power_box were checked
+        # against their original values at a clean radius and matched, so
+        # those were left alone.
+        name_box=(850, 10, 1140, 70),
+        title_box=(850, 80, 1060, 120),
+        quality_box=(1600, 80, 1895, 125),
+        star_level_pips_box=(1655, 5, 1875, 75),
+        element_icon_box=(695, 135, 785, 210),
+        type_icon_box=(785, 135, 875, 210),
+        level_box=(1130, 1195, 1350, 1290),
+        power_box=(990, 1270, 1400, 1312),
+        weapon_badge_click=(780, 345),  # confirmed via two independent tight zooms (Killer Bee and Zora Domini)
+        # Confirmed live on Doug Rockwell (no weapon equipped - shows the "+"
+        # placeholder). Unlike darwin's opaque ring, this badge's "empty"
+        # circle is translucent - a horizontal pixel scan through it showed
+        # the tan background bleeding through near the circle's curved edge
+        # (an initial sample point there read as plain background, not the
+        # ring), but a wide stable band well inside the circle (x 735-870 at
+        # y 325, and y 305-380 at x 750/850) reads a consistent dark
+        # olive-gray regardless of position within that band. Cross-checked
+        # against two different equipped-weapon champions (Zora Domini,
+        # Killer Bee) at these exact points - both differ from this
+        # fingerprint by 20-100 per channel, well past the 25-tolerance
+        # has_weapon_equipped() uses.
+        #
+        # A SECOND variant was needed after this fingerprint alone produced
+        # a false positive live on Klara (EPIC quality, teal page theme):
+        # her empty ring read (63,103,90)/(66,108,96) at these same points -
+        # a ~60-point swing on the red channel from Doug's (LEGENDARY,
+        # warm-gold theme) values above, confirmed to be the ring rendering
+        # as a translucent overlay tinted by the page's own quality-tier
+        # background rather than a fixed universal color (the two
+        # equipped-weapon cross-checks above stay valid discriminators
+        # against both variants - neither is within 25 of either). Add a
+        # third variant the same way if another quality tier's empty badge
+        # ever produces a third distinct color.
+        weapon_badge_empty_fingerprint=(
+            ((750, 340, (124, 117, 86)), (850, 340, (125, 121, 84))),  # LEGENDARY (Doug Rockwell)
+            ((750, 340, (63, 103, 90)), (850, 340, (66, 108, 96))),  # EPIC (Klara)
+        ),
+        # Confirmed live: this is the SAME icon ui_layout.py's win32
+        # UILayout.hamburger_icon already points at (1645,1385) - re-derived
+        # independently here and landed within 6px, confirming that reuse.
+        # (A different top-right icon on this screen opens the champion's
+        # lore/bio page instead - see champion_weapon.py's docstring, which
+        # already warns about exactly this mix-up.)
+        hamburger_icon=(1651, 1389),
+        space_combat_tab=(1090, 400),
+        ground_combat_tab=(1390, 400),
+        # NOT reused from ui_layout.py's win32 attribute_close_button
+        # (1275, 230) - confirmed live that coordinate misses this modal's
+        # actual close X by 422px on the x-axis (y matches closely). This
+        # looks like a genuinely different widget (the champion Attribute
+        # Details modal's own X button) rather than evidence that
+        # ui_layout.py's stored value is wrong - nav.py's back() click at
+        # ui_layout.py's win32 back_arrow (705,35) was separately confirmed
+        # live this session to close the champion detail view correctly (an
+        # earlier "this is stale too" note here was based on a bad test:
+        # back() called with no overlay actually open, so the click landed
+        # on bare map content instead of any button).
+        attribute_modal_close=(1697, 235),
+        attribute_modal_box=(930, 455, 1650, 950),
+        # Weapon detail page fields below: all confirmed live once
+        # weapon_badge_click's fix (above) actually opened the page. Read
+        # off a maxed signature weapon's page (Zora Domini's "Endless
+        # Whisper") - not yet cross-checked against a regular, non-signature
+        # weapon's page. This variant DOES show plain-text element/type
+        # badges ("KINETIC"/"ATTACK") despite an earlier session note
+        # assuming signature weapons lacked them - that assumption was
+        # itself downstream of weapon_badge_click's bug (it was never
+        # actually opened programmatically before, only reached by manually
+        # navigating there, so this structural claim was never actually
+        # tested until now).
+        weapon_name_box=(795, 145, 1430, 225),
+        weapon_element_type_box=(800, 275, 1460, 360),
+        weapon_level_box=(1030, 755, 1140, 830),
+        # Box covers the visible ~4 rows (POWER + 3 Formation bonuses); the
+        # full list is 9 rows per champion_weapon.py's docstring, hence the
+        # drag/stitch below. Live-scroll-tested; top edge was originally
+        # 1085, confirmed live to start 30px too low (clipping the top of
+        # the POWER row) and corrected to 1055.
+        weapon_stats_box=(880, 1055, 1780, 1410),
+        weapon_stats_drag_from=(1330, 1320),
+        weapon_stats_drag_to=(1330, 1200),
+        # Clicking either bonus icon on this signature weapon's page did NOT
+        # visibly open/toggle an info card the way champion_weapon.py's
+        # _read_bonuses docstring describes for a regular weapon - possibly
+        # another signature-weapon-specific layout difference, not yet
+        # investigated. weapon_bonus_info_box left uncalibrated (None) since
+        # nothing was confirmed to actually open.
+        weapon_bonus_icons=((1018, 970), (1233, 970)),  # space combat, ground combat - positions confirmed, click behavior not
+        info_tab=(1007, 1550),  # matches ui_layout.py's win32 overview_tab almost exactly - same shared tab-bar row
+        ability_tab=(1280, 1550),  # exact match to ui_layout.py's win32 component_tab
+        star_level_tab=(1542, 1550),  # matches ui_layout.py's win32 promote_tab almost exactly
+        ability_icons=(
+            (1038, 251), (966, 440), (1039, 635),  # space combat: top, mid, bottom
+            (1287, 513),  # ultimate
+            (1526, 255), (1603, 445), (1520, 632),  # ground combat: top, mid, bottom
+        ),
+        ability_header_box=(540, 745, 1618, 940),
+        ability_scroll_box=(540, 945, 1618, 1325),
+        # Derived proportionally from darwin's drag/box-height ratio (~39%
+        # of box height) rather than live-scroll-tested - scroll_stitch.py
+        # measures the actual per-drag offset from pixel content rather
+        # than trusting this number (see darwin's own comments on this
+        # field), so an imprecise starting distance self-corrects.
+        ability_scroll_drag_from=(1079, 1200),
+        ability_scroll_drag_to=(1079, 1050),
+        # Sampled live from a maxed signature weapon's detail page (see the
+        # field's own docstring above) - both points read (213,155,58).
+        weapon_maxed_fingerprint=((1290, 1424, (213, 155, 58)), (1455, 1487, (213, 155, 58))),
     ),
 }
 

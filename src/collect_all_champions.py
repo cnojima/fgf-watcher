@@ -22,6 +22,7 @@ from logging_setup import configure_logging
 from nav import back
 from ocr import read_text
 from profiles.champion_layout import ChampionLayout, get_champion_layout
+from profiles.fingerprints import current_screen
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +35,17 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "champions"
 # subsequent champions in a batch run before this check existed) is caught
 # and recovered from immediately, rather than silently corrupting every
 # champion collected afterward.
-_GRID_TITLE_BOX = (580, 40, 700, 66)
+#
+# Confirmed live this was simply wrong at this window size - the original
+# (580,40,700,66) crops blank background nowhere near the actual title, not
+# a transient timing miss. Because _on_grid() is called after every single
+# champion, this meant _recover_to_grid()'s back()-mashing loop ran on
+# every champion regardless of whether the close actually worked, and
+# happened to survive by luck until it didn't (confirmed live: the grid was
+# genuinely already open - visually confirmed via a fresh screenshot at the
+# moment recovery gave up and raised). Re-measured via a clean tight zoom on
+# a live "CHAMPION" title read.
+_GRID_TITLE_BOX = (1150, 10, 1400, 75)
 
 
 def _on_grid(hwnd) -> bool:
@@ -102,6 +113,28 @@ def collect_champion(hwnd, layout) -> dict:
 def collect_all_champions(hwnd) -> dict[str, dict]:
     log.info("Starting champion collection")
     focus_window(hwnd)
+
+    # goto() for a base view refuses if an overlay is currently open (it only
+    # knows how to toggle system_map/city_view, not close an arbitrary
+    # overlay on top of one) - close whatever might already be open first so
+    # this works regardless of where the game happened to be when called.
+    # current_screen() only recognizes screens with a catalogued fingerprint
+    # (currently just system_map/fleet_list) - a ship detail view, or an
+    # Attribute Details overlay left open from a previous run, reads back as
+    # None, not as "some overlay to close". A single back() call then gets
+    # skipped entirely and goto() fails outright (confirmed on a live run:
+    # starting from a ship detail view, goto("system_map") pressed SPACE from
+    # the wrong screen and never landed on system_map). Press back() blindly
+    # a few times instead, verifying after each - harmless no-ops once
+    # already on a base view, but reliably escapes however many unrecognized
+    # overlays are stacked up, not just the ones we happen to have a
+    # fingerprint for.
+    for _ in range(3):
+        if current_screen(hwnd) in ("system_map", "city_view"):
+            break
+        back(hwnd)
+        time.sleep(0.2)
+
     layout = get_champion_layout(hwnd)
 
     goto_champion_grid(hwnd)

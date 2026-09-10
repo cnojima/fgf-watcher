@@ -88,11 +88,11 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         if current_screen(hwnd) in ("system_map", "city_view"):
             break
         back(hwnd)
-        time.sleep(0.6)
+        time.sleep(0.2)
 
     goto(hwnd, "fleet_list")
     click(hwnd, *layout.first_card_click)
-    time.sleep(0.6)
+    time.sleep(0.2)
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     results: dict[str, dict] = {}
