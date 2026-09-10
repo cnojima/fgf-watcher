@@ -21,7 +21,9 @@ across captures, it stitches the *images* into one seamless composite first
 (aligning each new capture against the previous one by actual pixel content,
 not the requested drag distance - touch-scroll physics doesn't guarantee that
 distance exactly), then runs OCR exactly once on the whole thing. With no
-cross-capture merging step, cross-capture misattribution isn't possible.
+cross-capture merging step, cross-capture misattribution isn't possible. The
+scroll/stitch mechanics themselves live in scroll_stitch.py, shared with
+champion_weapon.py's stats list once that needed the exact same approach.
 
 Section headers are NOT reliably distinguishable from sub-rows by casing -
 top-level stats (HP, ATTACK, INT, DEF) happen to be short all-caps words, but
@@ -39,13 +41,12 @@ import re
 import time
 from pathlib import Path
 
-import numpy as np
 from PIL import Image
 
-from capture import screenshot_region
-from input_control import click, drag
+from input_control import click
 from ocr import preprocess, pytesseract
 from profiles.ui_layout import get_layout
+from scroll_stitch import stitch_scrolled_region
 
 log = logging.getLogger(__name__)
 
@@ -299,82 +300,15 @@ def heal_totals(data: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
     return data
 
 
-def _content_offset(prev_img: Image.Image, curr_img: Image.Image, table_tab_bar_height: int,
-                     expected: int, margin: int = 150) -> int:
-    """How far curr_img's content has scrolled down relative to prev_img, in
-    pixels - found by matching actual pixel content (a thin strip against a
-    sliding window of prev_img) rather than trusting the drag gesture
-    produced exactly the requested distance, which touch-scroll physics
-    doesn't guarantee. Searches a margin around the requested drag distance
-    rather than the whole image, since the true answer is always close to
-    it - a full search isn't needed and is slower.
-
-    The strip is sampled starting at table_tab_bar_height, not the very top of
-    the crop: the top of the table capture region is the "Overview/Details"
-    tab bar, which is fixed UI chrome that never scrolls - comparing that against itself always
-    scored a perfect match at offset=0 regardless of how far the actual list
-    content below it had moved, making this function report "no movement"
-    on every call even when the list had clearly scrolled several sections
-    down. Confirmed by saving and inspecting the actual crop, not guessed."""
-    prev = np.asarray(prev_img.convert("L"), dtype=np.int32)
-    curr = np.asarray(curr_img.convert("L"), dtype=np.int32)
-    strip_h = 80
-    curr_strip = curr[table_tab_bar_height:table_tab_bar_height + strip_h, :]
-
-    # Always search from 0, not expected-margin: at the true scroll-bottom
-    # the frames are identical and the real answer is 0, which a window
-    # centered on `expected` would never even consider - that's exactly what
-    # happened the first time this ran (stall never detected, scrolled all
-    # the way to MAX_SCROLLS, produced a 17,000px-tall composite Tesseract
-    # then refused to process at all).
-    lo = 0
-    hi = min(prev.shape[0] - table_tab_bar_height - strip_h, expected + margin)
-    best_offset, best_score = expected, None
-    for offset in range(lo, hi + 1):
-        start = table_tab_bar_height + offset
-        score = np.sum((prev[start:start + strip_h, :] - curr_strip) ** 2)
-        if best_score is None or score < best_score:
-            best_score = score
-            best_offset = offset
-    return best_offset
-
-
 def _stitch_full_table(hwnd, layout) -> Image.Image:
-    """Scrolls through the whole list, splicing only the genuinely new bottom
-    slice of each capture (per _content_offset) onto one growing composite
-    image, so the whole table ends up as a single seamless image with each
-    row appearing exactly once - no OCR text merging step needed at all."""
-    frame = screenshot_region(hwnd, layout.table_box)
-    parts = [frame]
-
-    stalls = 0
-    for i in range(MAX_SCROLLS):
-        drag(hwnd, *layout.drag_from, *layout.drag_to)
-        time.sleep(0.7)  # let scroll momentum/animation fully settle before capturing
-        next_frame = screenshot_region(hwnd, layout.table_box)
-        offset = _content_offset(frame, next_frame, layout.table_tab_bar_height, layout.expected_scroll_offset)
-        log.debug("Scroll %d/%d: offset=%dpx", i + 1, MAX_SCROLLS, offset)
-        if offset <= 5:
-            stalls += 1
-            # Same reasoning as the old text-based stall check: one
-            # negligible-movement reading isn't reliable proof we've hit the
-            # true bottom on its own. Two in a row is a much stronger signal.
-            if stalls >= 1:
-                log.debug("Reached scroll bottom after %d scroll(s)", i + 1)
-                break
-        else:
-            stalls = 0
-            parts.append(next_frame.crop((0, frame.height - offset, next_frame.width, next_frame.height)))
-        frame = next_frame
-    else:
-        log.warning("Hit MAX_SCROLLS (%d) without detecting a stall - composite may be incomplete", MAX_SCROLLS)
-
-    composite = Image.new("RGB", (frame.width, sum(p.height for p in parts)))
-    y = 0
-    for part in parts:
-        composite.paste(part, (0, y))
-        y += part.height
-    return composite
+    """Scrolls through the whole list via the shared scroll_stitch helper -
+    see that module for why image stitching (not cross-capture text
+    merging) is used."""
+    return stitch_scrolled_region(
+        hwnd, layout.table_box, layout.drag_from, layout.drag_to,
+        layout.expected_scroll_offset, static_header_height=layout.table_tab_bar_height,
+        max_scrolls=MAX_SCROLLS,
+    )
 
 
 def read_attribute_details(hwnd, name) -> dict[str, dict[str, str]]:

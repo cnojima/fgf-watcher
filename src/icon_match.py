@@ -34,7 +34,7 @@ _MATCH_SIZE = (48, 48)
 _cache: dict[str, dict[str, np.ndarray]] = {}
 
 
-def _autocrop_to_content(img: Image.Image, tolerance: int = 30) -> Image.Image:
+def autocrop_to_content(img: Image.Image, tolerance: int = 30) -> Image.Image:
     """Trims a roughly-uniform background border down to the bounding box of
     the actual icon content, so reference PNGs and live UI crops compare
     correctly even when cropped with different amounts of padding around the
@@ -62,7 +62,7 @@ def _autocrop_to_content(img: Image.Image, tolerance: int = 30) -> Image.Image:
 
 
 def _load(path: Path) -> np.ndarray:
-    img = _autocrop_to_content(Image.open(path).convert("RGB")).resize(_MATCH_SIZE, Image.LANCZOS)
+    img = autocrop_to_content(Image.open(path).convert("RGB")).resize(_MATCH_SIZE, Image.LANCZOS)
     return np.asarray(img, dtype=np.int32)
 
 
@@ -89,7 +89,7 @@ def match_icon(crop: Image.Image, category: str, max_mse: float = 3000.0) -> str
     against their correct reference icon - confirmed correct against each
     ship's actual on-screen badge, not assumed. The residual gap from a
     perfect 0 is inherent noise between a static reference PNG and an actual
-    screen capture (compression, anti-aliasing); _autocrop_to_content already
+    screen capture (compression, anti-aliasing); autocrop_to_content already
     removes the larger source of error (inconsistent padding). The nearest
     *wrong*-icon score seen live is ~3751 - 3000 sits with comfortable margin
     on both sides of that gap. Re-measure if a new icon in a category is ever
@@ -103,7 +103,7 @@ def match_icon(crop: Image.Image, category: str, max_mse: float = 3000.0) -> str
     across the board, re-check the box against a fresh zoom before touching
     this threshold."""
     refs = _get_category(category)
-    query_img = _autocrop_to_content(crop.convert("RGB")).resize(_MATCH_SIZE, Image.LANCZOS)
+    query_img = autocrop_to_content(crop.convert("RGB")).resize(_MATCH_SIZE, Image.LANCZOS)
     query = np.asarray(query_img, dtype=np.int32)
 
     scores = {name: float(np.mean((query - ref) ** 2)) for name, ref in refs.items()}
