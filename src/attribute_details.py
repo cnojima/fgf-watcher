@@ -36,6 +36,7 @@ merged every title-case section's rows into the wrong bucket.
 import difflib
 import re
 import time
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -46,6 +47,12 @@ from ocr import preprocess, pytesseract
 from profiles.ui_layout import get_layout
 
 MAX_SCROLLS = 45  # smaller per-drag distance means more scrolls needed to reach the bottom
+# Per CLAUDE.md: when OCR misreads/drops something, look at the exact image it
+# read rather than guessing at preprocessing tweaks - every past OCR failure in
+# this repo turned out to be a bug in the crop/composite itself, not an engine
+# limitation. Saved unconditionally (cheap) so it's always available to
+# inspect after a run that comes back with missing/wrong sections.
+DEBUG_DIR = Path(__file__).resolve().parent.parent / "data"
 
 # Every sub-row label seen so far across HP/ATTACK/INT/DEF/Damage Reduction/
 # Chance to inflict Major Damage. Extend this if a new section introduces a
@@ -121,9 +128,23 @@ def _join_wrapped_lines(text: str) -> list[str]:
     First strips "Overview"/"Details" tab-bar text that psm 6 sometimes prepends
     to the first content line (they're both text blocks close together
     vertically) - left in place, that noise would itself look like a
-    no-trailing-number line and get wrongly joined onto real content below it."""
+    no-trailing-number line and get wrongly joined onto real content below it.
+
+    Also drops short all-lowercase-alpha lines: under psm 12 (sparse text,
+    see read_attribute_details), each header row's dropdown chevron icon
+    occasionally gets segmented as its own spurious garbage text block (seen
+    live as "vw"/"Ww") rather than being absorbed into the row it belongs to -
+    confirmed by inspecting the saved debug composite directly, not guessed.
+    Left in place, one of these preceding the very first header ("HP") merges
+    into its label and pushes the fuzzy-match ratio just below the
+    classification cutoff, silently dropping that header. Every real label in
+    this game starts with a capital letter (all-caps like HP/ATTACK, or
+    Title-Case) so a short run of only lowercase letters can never be real
+    content - safe to filter categorically rather than matching the exact
+    misread string, which isn't guaranteed to repeat next time."""
+    _ICON_GLYPH_NOISE = re.compile(r"^[a-z]{1,3}$")
     raw_lines = [_TAB_BAR_NOISE.sub("", l).strip() for l in text.splitlines()]
-    raw_lines = [l for l in raw_lines if l]
+    raw_lines = [l for l in raw_lines if l and not _ICON_GLYPH_NOISE.match(l)]
     joined: list[str] = []
     buffer = ""
     for line in raw_lines:
@@ -344,20 +365,31 @@ def _stitch_full_table(hwnd, layout) -> Image.Image:
 
 def read_attribute_details(hwnd) -> dict[str, dict[str, str]]:
     layout = get_layout(hwnd)
+    click (hwnd, *layout.overview_tab)
+    time.sleep(0.3)
     click(hwnd, *layout.hamburger_icon)
-    time.sleep(0.6)
+    time.sleep(0.3)
     click(hwnd, *layout.details_tab)
-    time.sleep(0.6)
+    time.sleep(0.3)
 
     composite = _stitch_full_table(hwnd, layout)
-    # psm 6 (uniform block of text) was silently dropping whole section-header
-    # lines (e.g. "HP  1,029,897") once the composite grew past a couple
-    # hundred px tall, even though the exact same crop OCR'd correctly in
-    # isolation - confirmed by comparing psm 6 vs psm 4 output on an identical
-    # saved composite. psm 4 (single column of variable-sized text) is also a
-    # better semantic fit for this vertically-stacked list and recovered
-    # every header psm 6 lost in that comparison.
-    text = pytesseract.image_to_string(preprocess(composite, upscale=2), config="--psm 4").strip()
+    DEBUG_DIR.mkdir(parents=True, exist_ok=True)
+    composite.save(DEBUG_DIR / "_debug_attribute_stitch.png")
+
+    # psm 6 was silently dropping whole section-header lines (e.g. "HP
+    # 1,029,897") once the composite grew past a couple hundred px tall, even
+    # though the exact same crop OCR'd correctly in isolation - psm 4 fixed
+    # that at the time, but on a full multi-section composite (2700+px tall,
+    # confirmed via the saved debug composite) psm 4 regressed to the same
+    # failure: it dropped every section header except the very first,
+    # confirmed by comparing psm 4/6 output against psm 12 on the identical
+    # saved image - the header text wasn't misread, it just wasn't detected
+    # as text at all (each header row sits in its own visually boxed/shaded
+    # region, which apparently confuses layout modes that assume a uniform
+    # text column). psm 12 (sparse text) treats each visual block
+    # independently and recovered every header on that same comparison.
+    text = pytesseract.image_to_string(preprocess(composite, upscale=2), config="--psm 12").strip()
+    (DEBUG_DIR / "_debug_attribute_ocr.txt").write_text(text, encoding="utf-8")
 
     data: dict[str, dict[str, str]] = {}
     section: list[str | None] = [None]  # no cross-capture concern - this is one linear pass

@@ -19,24 +19,17 @@ from pathlib import Path
 
 from capture import find_window, screenshot_region
 from profiles.fingerprints import current_screen
-from input_control import click, focus_window
+from input_control import click, focus_window, press_key
 from nav import goto, back
 from ocr import preprocess, pytesseract
 from attribute_details import read_attribute_details, validate_sections
-from component_details import OVERVIEW_TAB, read_all_components
+from component_details import read_all_components
+from promotion_details import read_promotion
 from flagships import MAX_SHIPS
 from profiles.ui_layout import get_layout
 import ocr_easy
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "attributes"
-COMPONENT_DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "components"
-
-# The "Level NN" badge under the ship model on its Overview tab. Same visual
-# metaphor used throughout this game's UI: a locked/not-yet-unlocked item is
-# still viewable, just rendered without the labels an unlocked one gets -
-# confirmed by the user directly, with this badge specifically named as the
-# reliable "is this ship real" signal for the flagship section.
-LEVEL_BADGE_BOX = (1230, 1055, 1360, 1180)
 
 
 def _read_ship_name(hwnd, layout) -> str:
@@ -44,7 +37,7 @@ def _read_ship_name(hwnd, layout) -> str:
     return ocr_easy.read_text(img)
 
 
-def _is_ship_unlocked(hwnd) -> bool:
+def _is_ship_unlocked(hwnd, layout) -> bool:
     """Cheap check done *before* the expensive attribute scroll-read: an
     unlocked ship's Overview tab shows a "Level NN" badge; a locked slot's
     preview doesn't. psm 11 (sparse text) is what actually reads the digits
@@ -53,7 +46,7 @@ def _is_ship_unlocked(hwnd) -> bool:
     not fully understood; 11 is confirmed to work. Only the digits matter -
     the word "Level" itself doesn't reliably come through even on a real
     ship, so this checks for any digit rather than requiring the word."""
-    img = screenshot_region(hwnd, LEVEL_BADGE_BOX)
+    img = screenshot_region(hwnd, layout.level_badge_box)
     text = pytesseract.image_to_string(preprocess(img, upscale=2), config="--psm 11").strip()
     return bool(re.search(r"\d", text))
 
@@ -94,11 +87,11 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
     time.sleep(0.6)
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    COMPONENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
     results: dict[str, dict] = {}
 
     for _ in range(MAX_SHIPS):
         name = _read_ship_name(hwnd, layout)
+
         if not name:
             # The detail view's entrance animation may not have finished
             # rendering the name yet - confirmed on a live run where a real
@@ -116,10 +109,10 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         # live. So every iteration explicitly selects Overview before
         # reading attributes, rather than assuming we're already there (true
         # for ship 1, via FIRST_CARD_CLICK, but not for ship 2+).
-        click(hwnd, *OVERVIEW_TAB)
+        click(hwnd, *layout.overview_tab)
         time.sleep(0.6)
 
-        if not _is_ship_unlocked(hwnd):
+        if not _is_ship_unlocked(hwnd, layout):
             # No "Level NN" badge - a locked, not-yet-unlocked ship
             # placeholder, not a real ship (confirmed directly: an
             # unrevealed slot can still show a name preview, garbled or
@@ -130,28 +123,42 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
             # slot costs one cheap OCR call instead of a full failed scan.
             break
 
+        print(f"{name}: collecting Attribute Details")
         data = read_attribute_details(hwnd)
         validation = validate_sections(data)
         results[name] = data
 
-        out_path = DATA_DIR / f"{name}.json"
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump({"ship": name, "attributes": data, "validation": validation}, f, indent=2)
-
-        click(hwnd, *layout.attribute_close_button)  # close the attribute overlay
+        # Deliberately overrides nav.py's "never use ESC" rule (it's normally
+        # "Quit game" from a base view and, per a known game bug, can even
+        # trigger a full quit from certain overlays instead of closing just
+        # that overlay) - confirmed by the user this overlay specifically
+        # closes safely with it. layout.attribute_close_button is kept
+        # unused as a rollback if that turns out to be wrong on a wider test.
+        press_key(hwnd, "esc")  # close the attribute overlay
         time.sleep(0.6)
 
-        # read_all_components() assumes the Overview tab is showing (true here,
-        # right after the attribute overlay closes) and switches to the
-        # Component tab itself - it leaves the view on the last thumbnail's
-        # detail, which is fine since the next iteration re-selects Overview
-        # before doing anything else.
-        components = read_all_components(hwnd)
-        component_path = COMPONENT_DATA_DIR / f"{name}.json"
-        with open(component_path, "w", encoding="utf-8") as f:
-            json.dump({"ship": name, "components": components}, f, indent=2)
+        components = read_all_components(hwnd, name)  # leaves the last component's detail view open
 
-        click(hwnd, *layout.right_arrow)  # page to the next ship, still in detail view
+        # One back() from a component's detail view returns to the Component
+        # tab's own grid-of-5-icons view (not Overview, not the fleet list) -
+        # confirmed live. read_promotion() then switches to the Promote tab
+        # directly (a top-level tab switch, not a nested sub-view, so no
+        # back() is needed first) to read the level badge.
+        back(hwnd)
+        time.sleep(0.6)
+        promotion = read_promotion(hwnd)
+
+        out_path = DATA_DIR / f"{name}.json"
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "ship": name, "attributes": data, "validation": validation,
+                    "components": components, "promotion": promotion,
+                },
+                f, indent=2,
+            )
+
+        click(hwnd, *layout.right_arrow)  # page to the next ship, still on the Promote tab
         time.sleep(0.6)
 
     # Loop exits with the view on the wrapped-around ship's Promote tab (see

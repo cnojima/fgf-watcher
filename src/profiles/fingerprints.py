@@ -42,6 +42,11 @@ _FINGERPRINT_PROFILES: dict[ProfileKey, dict[str, Fingerprint]] = {
             (1220, 40, (237, 241, 211)),  # inside "FLAGSHIP" title letter stroke
             (1210, 30, (75, 147, 132)),
         ]),
+        # TODO: taken from OSX - re-confirm from windows dev env
+        "city_view": Fingerprint(points=[
+            (65, 730, (119, 129, 144)),  # base-interior floor/wall panel color, top-left icon column
+            (65, 815, (120, 129, 144)),
+        ]),
     },
     ("darwin", (1280, 828)): {
         # Confirmed via calibrate.py zoom + direct pixel sampling of
@@ -60,6 +65,11 @@ _FINGERPRINT_PROFILES: dict[ProfileKey, dict[str, Fingerprint]] = {
             (607, 55, (75, 147, 131)),  # inside "F" outline stroke of "FLAGSHIP"
             (631, 55, (237, 241, 211)),  # inside "L" fill of "FLAGSHIP"
         ]),
+        "city_view": Fingerprint(points=[
+            (65, 730, (119, 129, 144)),  # base-interior floor/wall panel color, top-left icon column
+            (65, 815, (120, 129, 144)),
+        ]),
+
     },
     # Add a ("darwin", (width, height)): {...} entry per Mac window size calibrated.
 }

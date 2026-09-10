@@ -3,7 +3,7 @@ so you can read off pixel boxes for regions.json by eye.
 
 Usage:
     python src/calibrate.py list                            # show all window titles
-    python src/calibrate.py shot "window title" [delay]      # save gridded screenshot to data/
+    python src/calibrate.py shot [delay]                     # save gridded screenshot to data/
     python src/calibrate.py zoom X Y [radius] [source]       # zoom into (X,Y) from a prior shot
 
 IMPORTANT: reading coordinates by eye off the full screenshot (especially after
@@ -13,11 +13,15 @@ few percent of visual misjudgment on a 2000+px-wide image is a lot of real
 pixels. Always confirm a coordinate with `zoom` before clicking it, rather than
 eyeballing the full shot.
 
-`shot` waits `delay` seconds (default 3) before capturing. screenshot_window()
-refuses to capture unless the game is the foreground window, but running this
-command from a terminal makes the *terminal* the foreground window the instant
-it launches - the delay is time to alt-tab back to the game before the actual
-capture happens, so this never needs to steal focus from whatever's on screen.
+`shot` no longer takes a window title: find_window() with no argument
+auto-detects the game window by trying both its known titles (mac keeps the
+colon, "Foundation: Galactic Frontier"; Windows drops it - see capture.py).
+It then brings that window to the foreground itself (via focus_window())
+before capturing, since screenshot_window() refuses otherwise. On Windows this
+means `shot` goes through the same SetForegroundWindow path as click()/
+press_key() - if the game's elevated (as Administrator) and this needs
+elevation too where it didn't before, run it via run_admin.ps1 like any other
+input-driving script. Not yet confirmed live on Windows.
 """
 import sys
 import time
@@ -25,7 +29,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from capture import find_window, list_windows, screenshot_window
+from capture import describe_display_scale, find_window, get_window_rect, list_windows, screenshot_window
+from input_control import focus_window
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -41,8 +46,9 @@ def _draw_grid(img: Image.Image, step: int) -> Image.Image:
     return img
 
 
-def save_gridded_screenshot(title_substring: str, grid_step: int = 50) -> Path:
+def save_gridded_screenshot(title_substring: str | None = None, grid_step: int = 50) -> Path:
     hwnd = find_window(title_substring)
+    focus_window(hwnd)  # screenshot_window refuses unless hwnd is frontmost
     img = screenshot_window(hwnd).convert("RGB")
     _draw_grid(img, grid_step)
 
@@ -89,19 +95,19 @@ if __name__ == "__main__":
         for title in list_windows():
             print(title)
     elif sys.argv[1] == "shot":
-        if len(sys.argv) < 3:
-            print("Usage: python src/calibrate.py shot \"window title substring\" [delay]")
-            sys.exit(1)
-        delay = int(sys.argv[3]) if len(sys.argv) > 3 else 3
-        hwnd = find_window(sys.argv[2])
-        print(f"Capturing in {delay}s - switch focus to the game window now...")
-        time.sleep(delay)
+        delay = float(sys.argv[2]) if len(sys.argv) > 2 else 0.5
+        hwnd = find_window()  # auto-detects the game window - see capture.py
+        focus_window(hwnd)  # brings it to the foreground; screenshot_window refuses otherwise
+        time.sleep(delay)  # let the game's own render settle after gaining focus
         raw = screenshot_window(hwnd).convert("RGB")
         DATA_DIR.mkdir(exist_ok=True)
         raw.save(DATA_DIR / "calibration_raw.png")
         gridded = raw.copy()
         _draw_grid(gridded, 50)
         gridded.save(DATA_DIR / "calibration.png")
+        rect = get_window_rect(hwnd)
+        print(f"Profile key for this window: ({sys.platform!r}, ({rect.width}, {rect.height}))")
+        print(describe_display_scale(hwnd))
         print(f"Saved {DATA_DIR / 'calibration.png'}")
         print("Open it and read off approximate pixel coordinates (red gridlines every 50px), "
               "then run `zoom X Y` to confirm before clicking anything.")

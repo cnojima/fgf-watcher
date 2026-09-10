@@ -6,8 +6,26 @@ were all calibrated together against the same reference window and would
 drift together whenever that changes.
 """
 from dataclasses import dataclass
+from typing import TypeVar
 
 from display_profiles import ProfileKey, select_profile
+
+T = TypeVar("T")
+
+
+def require_field(value: T | None, field_name: str) -> T:
+    """Some UILayout fields (component/promotion detail sub-views) default to
+    None until calibrated for a given platform/window size - fail with a
+    clear, actionable message instead of clicking/cropping with None, which
+    would either crash confusingly deep inside input_control/capture or
+    (worse) silently misbehave."""
+    if value is None:
+        raise RuntimeError(
+            f"No calibrated {field_name} for this profile - navigate to the "
+            f"relevant screen, run calibrate.py shot/zoom to find it, then add "
+            f"it to the current profile's UILayout entry in profiles/ui_layout.py."
+        )
+    return value
 
 
 @dataclass(frozen=True)
@@ -23,6 +41,28 @@ class UILayout:
     drag_from: tuple[int, int]                   # attribute_details.py: scroll-down drag start
     drag_to: tuple[int, int]                     # attribute_details.py: scroll-down drag end
     attribute_close_button: tuple[int, int]      # collect_all_flagships.py: closes the Attribute Details overlay
+    overview_tab: tuple[int, int]                # collect_all_flagships.py: ship detail view's Overview tab
+    component_tab: tuple[int, int]               # component_details.py: ship detail view's Component tab
+    promote_tab: tuple[int, int]                 # promotion_details.py: ship detail view's Promote tab
+    level_badge_box: tuple[int, int, int, int]   # collect_all_flagships.py: "Level NN" badge, unlocked-ship check
+
+    # Component detail sub-view (component_details.py). Not yet calibrated for
+    # every profile - default None rather than a guessed value, so an
+    # uncalibrated platform/size fails loudly (via component_details._require)
+    # instead of silently misclicking with a wrong-scale coordinate. Must stay
+    # after every field above without a default (dataclass field-order rule).
+    first_grid_icon: tuple[int, int] | None = None              # first of 5 component icons in the grid view
+    thumbnail_positions: tuple[tuple[int, int], ...] | None = None  # 5 equipped-component thumbnail centers
+    component_name_box: tuple[int, int, int, int] | None = None
+    component_rarity_box: tuple[int, int, int, int] | None = None
+    component_level_box: tuple[int, int, int, int] | None = None
+    component_stats_box: tuple[int, int, int, int] | None = None
+    component_set_bonus_box: tuple[int, int, int, int] | None = None
+
+    # promotion_details.py. Same "None until calibrated" rule as the component
+    # detail fields above - see component_details._require.
+    promotion_badge_box: tuple[int, int, int, int] | None = None  # current-level triangle badge, Promote tab
+    promote_button_box: tuple[int, int, int, int] | None = None   # PROMOTE/PROMOTED button, same tab
 
     @property
     def expected_scroll_offset(self) -> int:
@@ -56,7 +96,29 @@ _LAYOUT_PROFILES: dict[ProfileKey, UILayout] = {
         drag_from=(1000, 900),
         drag_to=(1000, 550),
         attribute_close_button=(1275, 230),
-    ),    
+        # Previously flat constants in component_details.py (OVERVIEW_TAB/
+        # COMPONENT_TAB/PROMOTE_TAB) - moved here for consistency with every
+        # other click coordinate, unchanged in value.
+        overview_tab=(1007, 1550),
+        component_tab=(1280, 1550),
+        promote_tab=(1542, 1550),
+        # Previously collect_all_flagships.py's own flat LEVEL_BADGE_BOX
+        # constant - moved here for consistency, unchanged in value.
+        level_badge_box=(1230, 1055, 1360, 1180),
+        # Previously component_details.py's own flat constants - moved here
+        # for consistency, unchanged in value.
+        first_grid_icon=(980, 490),
+        thumbnail_positions=((950, 1500), (1110, 1500), (1270, 1500), (1425, 1500), (1585, 1500)),
+        component_name_box=(1040, 540, 1700, 595),
+        component_rarity_box=(1040, 595, 1700, 645),
+        component_level_box=(1040, 650, 1400, 715),
+        component_stats_box=(900, 760, 1700, 1030),
+        component_set_bonus_box=(960, 1055, 1700, 1230),
+        # Previously promotion_details.py's own flat constants - moved here
+        # for consistency, unchanged in value.
+        promotion_badge_box=(1090, 580, 1205, 665),
+        promote_button_box=(960, 1345, 1600, 1425),
+    ),
     ("darwin", (1280, 828)): UILayout(
         # Recalibrated live via calibrate.py zoom against fresh screenshots
         # (not eyeballed) - the previous values in this block were all
@@ -78,9 +140,11 @@ _LAYOUT_PROFILES: dict[ProfileKey, UILayout] = {
         # Top of table_box is the modal's Overview/Details tab bar (y=196),
         # not the scrollable content - table_tab_bar_height below tells
         # attribute_details.py where the real (scrolling) content starts
-        # within this crop. Bottom (698) is the modal's own lower edge,
-        # confirmed via zoom against a live Details-tab screenshot.
-        table_box=(433, 196, 848, 698),
+        # within this crop. Bottom was 698 (the modal's own lower edge per an
+        # earlier zoom check), but that was catching UI chrome below the
+        # actual table content in the stitched debug composite - pulled in by
+        # 20px.
+        table_box=(433, 196, 848, 678),
         table_tab_bar_height=57,  # confirmed via zoom: tab bar occupies y 196-253 of table_box
         # Drag from a lower point to a higher one = touch-style swipe-up
         # (scrolls the list down). Exact distance matters less than it looks -
@@ -89,34 +153,26 @@ _LAYOUT_PROFILES: dict[ProfileKey, UILayout] = {
         drag_from=(640, 650),
         drag_to=(640, 470),
         attribute_close_button=(814, 176),  # confirmed live: closes the Attribute Details modal
-    ),
-    # ("darwin", (1280, 828)): UILayout(
-    #     back_arrow=(705, 35),
-    #     first_card_click=(1000, 210),
-    #     # Bottom was originally 65, which clipped descenders (p/y/g) and was
-    #     # the actual cause of several OCR misreads (e.g. "Opportunity" ->
-    #     # "Opportunitv"), not an OCR engine limitation - confirmed by
-    #     # inspecting the crop directly.
-    #     name_box=(845, 5, 1090, 80),
-    #     right_arrow=(1825, 1010),
-    #     hamburger_icon=(1645, 1385),
-    #     details_tab=(1475, 410),
-    #     # Bottom was originally 1060, then 1150 - both wrong, both from
-    #     # eyeballing the full downscaled screenshot. At true max-scroll the
-    #     # last section's content extends to y=1290; confirmed via zoom.py's
-    #     # 10px grid against calibration_raw.png, not another eyeball guess.
-    #     table_box=(650, 350, 1650, 1330),
-    #     table_tab_bar_height=180,
-    #     # Drag from a lower point to a higher one = touch-style swipe-up
-    #     # (scrolls the list down). Exact distance matters less than it looks -
-    #     # attribute_details.py measures actual scroll offset from pixel
-    #     # content rather than trusting this number.
-    #     drag_from=(1000, 900),
-    #     drag_to=(1000, 550),
-    #     attribute_close_button=(1275, 230),
-    # ),
-    # Add a ("darwin", (width, height)): UILayout(...) entry per Mac window
-    # size calibrated via calibrate.py (it prints the exact key to use).
+        # Confirmed via calibrate.py zoom against a live ship detail view -
+        # the three tab labels' x-centers along the shared tab bar (y=800).
+        overview_tab=(490, 800),
+        component_tab=(640, 800),
+        promote_tab=(780, 800),
+        level_badge_box=(620, 580, 660, 620),  # confirmed via calibrate.py zoom against a live unlocked ship
+        # Previously component_details.py's own flat constants - moved here
+        # for consistency, unchanged in value.
+        first_grid_icon=(640, 525),
+        thumbnail_positions=((475, 775), (550, 775), (635, 775), (725, 775), (792, 775)),
+        component_name_box=(530, 310, 750, 325),
+        component_rarity_box=(530, 330, 750, 345),
+        component_level_box=(530, 360, 640, 380),
+        component_stats_box=(460, 450, 830, 600),
+        component_set_bonus_box=(460, 610, 720, 620),
+        # Previously promotion_details.py's own flat constants - moved here
+        # for consistency, unchanged in value.
+        promotion_badge_box=(590, 325, 680, 425),
+        promote_button_box=(480, 780, 780, 750),
+    )
 }
 
 

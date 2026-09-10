@@ -4,9 +4,10 @@ at coordinates relative to its frame - macOS backend.
 Mirrors win/input_control_win.py's public surface exactly, backed by Quartz
 CGEvent posting (pyobjc) instead of pydirectinput.
 """
+import subprocess
 import time
 
-from AppKit import NSApplicationActivateIgnoringOtherApps, NSRunningApplication
+from AppKit import NSRunningApplication, NSWorkspace
 from Quartz import (
     CGEventCreateKeyboardEvent,
     CGEventCreateMouseEvent,
@@ -28,6 +29,7 @@ from mac.capture_mac import _find_window_info, get_window_rect
 _KEYCODES = {
     "space": 0x31,
     "enter": 0x24,
+    "esc": 0x35,
     "v": 0x09,
     "b": 0x0B,
     "c": 0x08,
@@ -52,8 +54,55 @@ def focus_window(hwnd: int) -> None:
     app = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid)
     if app is None:
         raise RuntimeError(f"No running application found for window {hwnd}")
-    app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps)
-    time.sleep(0.1)  # let the OS finish the focus switch before sending input
+
+    # NSRunningApplication.activateWithOptions_ (tried first, see git history)
+    # can raise the window in the window-server's z-order without macOS ever
+    # actually flipping "frontmost application" to it - confirmed live: the
+    # app's activationPolicy was Regular (so this wasn't the Accessory/
+    # Prohibited case where an app has no menu bar and genuinely can't become
+    # frontmost), yet frontmostApplication() stayed on the calling terminal
+    # indefinitely. That Cocoa call was made from a bare `python` process
+    # with no NSApplication/run loop of its own - a known gap where the
+    # app-switch handshake (an asynchronous distributed notification) doesn't
+    # reliably complete. Apple Events activation (`osascript ... activate`)
+    # goes through Launch Services / the target app's own event handler
+    # instead, which doesn't depend on the caller having a run loop - the
+    # standard way other process-external tools (Hammerspoon, AppleScript
+    # switchers, etc.) bring another app to the front.
+    bundle_id = app.bundleIdentifier()
+    result = subprocess.run(
+        ["osascript", "-e", f'tell application id "{bundle_id}" to activate'],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"osascript failed to activate {app.localizedName()!r} (bundle "
+            f"{bundle_id!r}): {result.stderr.strip()}. This is usually a "
+            f"denied/missing Automation permission for this terminal - check "
+            f"System Settings > Privacy & Security > Automation."
+        )
+
+    # Still not instantaneous - poll for it actually completing rather than
+    # guessing a fixed delay, and fail loudly if it never does instead of
+    # silently proceeding with the wrong window focused.
+    deadline = time.time() + 2.0
+    while time.time() < deadline:
+        frontmost = NSWorkspace.sharedWorkspace().frontmostApplication()
+        if frontmost is not None and frontmost.processIdentifier() == pid:
+            return
+        time.sleep(0.05)
+
+    frontmost = NSWorkspace.sharedWorkspace().frontmostApplication()
+    still_frontmost = frontmost.localizedName() if frontmost else None
+    raise RuntimeError(
+        f"Sent 'activate' to {app.localizedName()!r} (pid {pid}, bundle "
+        f"{bundle_id!r}) via osascript but it never became the frontmost "
+        f"application - still {still_frontmost!r}. Check Automation "
+        f"permission for this terminal (System Settings > Privacy & Security "
+        f"> Automation) - the first run should have prompted to allow "
+        f"controlling {app.localizedName()!r}; if that was denied, re-enable "
+        f"it there."
+    )
 
 
 def click(hwnd: int, x: int, y: int) -> None:
