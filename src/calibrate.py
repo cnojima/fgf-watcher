@@ -23,6 +23,7 @@ press_key() - if the game's elevated (as Administrator) and this needs
 elevation too where it didn't before, run it via run_admin.ps1 like any other
 input-driving script. Not yet confirmed live on Windows.
 """
+import logging
 import sys
 import time
 from pathlib import Path
@@ -31,8 +32,10 @@ from PIL import Image, ImageDraw
 
 from capture import describe_display_scale, find_window, get_window_rect, list_windows, screenshot_window
 from input_control import focus_window
+from logging_setup import configure_logging
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+log = logging.getLogger(__name__)
 
 
 def _draw_grid(img: Image.Image, step: int) -> Image.Image:
@@ -55,6 +58,7 @@ def save_gridded_screenshot(title_substring: str | None = None, grid_step: int =
     DATA_DIR.mkdir(exist_ok=True)
     out_path = DATA_DIR / "calibration.png"
     img.save(out_path)
+    log.debug("Saved gridded screenshot to %s", out_path)
     return out_path
 
 
@@ -87,15 +91,18 @@ def save_zoom(x: int, y: int, radius: int = 100, source: str | None = None, grid
 
 
 if __name__ == "__main__":
+    configure_logging()
+
     if len(sys.argv) < 2 or sys.argv[1] not in ("list", "shot", "zoom"):
-        print(__doc__)
+        log.info(__doc__)
         sys.exit(1)
 
     if sys.argv[1] == "list":
         for title in list_windows():
-            print(title)
+            log.info(title)
     elif sys.argv[1] == "shot":
         delay = float(sys.argv[2]) if len(sys.argv) > 2 else 0.5
+        log.info("Locating game window (delay=%.1fs before capture)", delay)
         hwnd = find_window()  # auto-detects the game window - see capture.py
         focus_window(hwnd)  # brings it to the foreground; screenshot_window refuses otherwise
         time.sleep(delay)  # let the game's own render settle after gaining focus
@@ -106,17 +113,17 @@ if __name__ == "__main__":
         _draw_grid(gridded, 50)
         gridded.save(DATA_DIR / "calibration.png")
         rect = get_window_rect(hwnd)
-        print(f"Profile key for this window: ({sys.platform!r}, ({rect.width}, {rect.height}))")
-        print(describe_display_scale(hwnd))
-        print(f"Saved {DATA_DIR / 'calibration.png'}")
-        print("Open it and read off approximate pixel coordinates (red gridlines every 50px), "
-              "then run `zoom X Y` to confirm before clicking anything.")
+        log.info("Profile key for this window: (%r, (%d, %d))", sys.platform, rect.width, rect.height)
+        log.info(describe_display_scale(hwnd))
+        log.info("Saved %s", DATA_DIR / "calibration.png")
+        log.info("Open it and read off approximate pixel coordinates (red gridlines every 50px), "
+                  "then run `zoom X Y` to confirm before clicking anything.")
     elif sys.argv[1] == "zoom":
         if len(sys.argv) < 4:
-            print("Usage: python src/calibrate.py zoom X Y [radius] [source]")
+            log.error("Usage: python src/calibrate.py zoom X Y [radius] [source]")
             sys.exit(1)
         x, y = int(sys.argv[2]), int(sys.argv[3])
         radius = int(sys.argv[4]) if len(sys.argv) > 4 else 100
         source = sys.argv[5] if len(sys.argv) > 5 else None
         out_path = save_zoom(x, y, radius, source)
-        print(f"Saved {out_path} (10px grid, yellow labels are original-image coordinates)")
+        log.info("Saved %s (10px grid, yellow labels are original-image coordinates)", out_path)

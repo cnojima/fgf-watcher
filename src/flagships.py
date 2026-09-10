@@ -3,6 +3,7 @@ opening the fleet list and paging through the ship detail view with the
 </>  arrows. Uses ocr_easy (not ocr.py's Tesseract) for the name text - see
 ocr_easy.py docstring for why.
 """
+import logging
 import time
 
 from capture import screenshot_region
@@ -10,6 +11,8 @@ from input_control import click
 from nav import back, goto
 from profiles.ui_layout import get_layout
 import ocr_easy
+
+log = logging.getLogger(__name__)
 
 MAX_SHIPS = 4
 
@@ -31,4 +34,5 @@ def read_owned_flagships(hwnd) -> list[str]:
         time.sleep(0.6)
 
     back(hwnd)  # close detail view, back to fleet_list
+    log.info("Read %d owned flagship(s): %s", len(names), names)
     return names

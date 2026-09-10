@@ -2,12 +2,15 @@
 at coordinates relative to its client area. Uses pydirectinput instead of
 pyautogui because many games only respond to DirectInput-style events.
 """
+import logging
 import time
 
 import pydirectinput
 import win32gui
 
 from win.capture_win import get_window_rect
+
+log = logging.getLogger(__name__)
 
 pydirectinput.PAUSE = 0.05
 
@@ -19,6 +22,7 @@ def focus_window(hwnd: int) -> None:
 
 def click(hwnd: int, x: int, y: int) -> None:
     """x, y are pixels relative to the window's client area (same frame as calibrate.py)."""
+    log.debug("click(%d, %d)", x, y)
     focus_window(hwnd)
     rect = get_window_rect(hwnd)
     pydirectinput.moveTo(rect.left + x, rect.top + y)
@@ -26,6 +30,7 @@ def click(hwnd: int, x: int, y: int) -> None:
 
 
 def press_key(hwnd: int, key: str) -> None:
+    log.debug("press_key(%r)", key)
     focus_window(hwnd)
     pydirectinput.press(key)
 
@@ -48,6 +53,7 @@ def drag(hwnd: int, start_x: int, start_y: int, end_x: int, end_y: int,
     reads as a deliberate stop instead, same as holding a touchscreen swipe
     in place before lifting off.
     """
+    log.debug("drag((%d, %d) -> (%d, %d))", start_x, start_y, end_x, end_y)
     focus_window(hwnd)
     rect = get_window_rect(hwnd)
     sx, sy = rect.left + start_x, rect.top + start_y

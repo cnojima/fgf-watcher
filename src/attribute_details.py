@@ -34,6 +34,7 @@ not a capitalization check - an even earlier version used caps and silently
 merged every title-case section's rows into the wrong bucket.
 """
 import difflib
+import logging
 import re
 import time
 from pathlib import Path
@@ -45,6 +46,8 @@ from capture import screenshot_region
 from input_control import click, drag
 from ocr import preprocess, pytesseract
 from profiles.ui_layout import get_layout
+
+log = logging.getLogger(__name__)
 
 MAX_SCROLLS = 45  # smaller per-drag distance means more scrolls needed to reach the bottom
 # Per CLAUDE.md: when OCR misreads/drops something, look at the exact image it
@@ -166,6 +169,7 @@ def _parse(text: str, data: dict[str, dict[str, str]], section: list[str | None]
 
         classified = _classify_label(label)
         if classified is None:
+            log.debug("Dropped unrecognized label %r (value %r)", label, value)
             continue  # unrecognized text, likely a mistimed/blurred capture - drop it
         kind, canonical = classified
         if kind == "subrow":
@@ -196,6 +200,11 @@ def _parse(text: str, data: dict[str, dict[str, str]], section: list[str | None]
                     # A repeat with the SAME value is just this row being
                     # OCR'd again from overlapping capture regions - harmless,
                     # ignore rather than treat as a section boundary.
+                    log.warning(
+                        "%s: %r changed %r -> %r within same section - likely a "
+                        "dropped header, abandoning this section", section[0], key,
+                        data[section[0]][key], value,
+                    )
                     section[0] = None
                     continue
                 if key in data[section[0]]:
@@ -252,11 +261,10 @@ def validate_sections(data: dict[str, dict[str, str]]) -> dict[str, dict]:
 
         expected = (base_sum + pct_sum) if total_is_pct else base_sum * (1 + pct_sum / 100)
         tolerance = max(1.0, total * 0.005)  # displayed percentages are rounded to 2dp
-        results[section] = {
-            "expected": expected,
-            "actual": total,
-            "valid": abs(expected - total) <= tolerance,
-        }
+        valid = abs(expected - total) <= tolerance
+        if not valid:
+            log.debug("%s: total %s doesn't match sub-rows (expected %.2f)", section, total_str, expected)
+        results[section] = {"expected": expected, "actual": total, "valid": valid}
     return results
 
 
@@ -284,7 +292,9 @@ def heal_totals(data: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
         fields = data[section]
         expected = result["expected"]
         is_pct = fields["_total"].endswith("%")
-        fields["_total"] = f"{expected:.2f}%" if is_pct else f"{round(expected):,}"
+        healed = f"{expected:.2f}%" if is_pct else f"{round(expected):,}"
+        log.info("%s: healed total %r -> %r from sub-rows", section, fields["_total"], healed)
+        fields["_total"] = healed
         fields["_total_healed"] = "true"
     return data
 
@@ -338,22 +348,26 @@ def _stitch_full_table(hwnd, layout) -> Image.Image:
     parts = [frame]
 
     stalls = 0
-    for _ in range(MAX_SCROLLS):
+    for i in range(MAX_SCROLLS):
         drag(hwnd, *layout.drag_from, *layout.drag_to)
         time.sleep(0.7)  # let scroll momentum/animation fully settle before capturing
         next_frame = screenshot_region(hwnd, layout.table_box)
         offset = _content_offset(frame, next_frame, layout.table_tab_bar_height, layout.expected_scroll_offset)
+        log.debug("Scroll %d/%d: offset=%dpx", i + 1, MAX_SCROLLS, offset)
         if offset <= 5:
             stalls += 1
             # Same reasoning as the old text-based stall check: one
             # negligible-movement reading isn't reliable proof we've hit the
             # true bottom on its own. Two in a row is a much stronger signal.
             if stalls >= 1:
+                log.debug("Reached scroll bottom after %d scroll(s)", i + 1)
                 break
         else:
             stalls = 0
             parts.append(next_frame.crop((0, frame.height - offset, next_frame.width, next_frame.height)))
         frame = next_frame
+    else:
+        log.warning("Hit MAX_SCROLLS (%d) without detecting a stall - composite may be incomplete", MAX_SCROLLS)
 
     composite = Image.new("RGB", (frame.width, sum(p.height for p in parts)))
     y = 0
@@ -364,7 +378,7 @@ def _stitch_full_table(hwnd, layout) -> Image.Image:
 
 
 def read_attribute_details(hwnd, name) -> dict[str, dict[str, str]]:
-    print(f"{name}: collecting Attribute Details")
+    log.info("%s: collecting Attribute Details", name)
     layout = get_layout(hwnd)
     click (hwnd, *layout.overview_tab)
     time.sleep(0.2)
@@ -376,6 +390,7 @@ def read_attribute_details(hwnd, name) -> dict[str, dict[str, str]]:
     composite = _stitch_full_table(hwnd, layout)
     DEBUG_DIR.mkdir(parents=True, exist_ok=True)
     composite.save(DEBUG_DIR / "_debug_attribute_stitch.png")
+    log.debug("Stitched composite: %dx%d", composite.width, composite.height)
 
     # psm 6 was silently dropping whole section-header lines (e.g. "HP
     # 1,029,897") once the composite grew past a couple hundred px tall, even
@@ -395,4 +410,6 @@ def read_attribute_details(hwnd, name) -> dict[str, dict[str, str]]:
     data: dict[str, dict[str, str]] = {}
     section: list[str | None] = [None]  # no cross-capture concern - this is one linear pass
     _parse(text, data, section)
-    return heal_totals(data)
+    result = heal_totals(data)
+    log.info("%s: read %d section(s): %s", name, len(result), list(result))
+    return result

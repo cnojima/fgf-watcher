@@ -1,8 +1,11 @@
 """Preprocess a cropped screenshot region and OCR it."""
+import logging
 import shutil
 
 import pytesseract
 from PIL import Image, ImageOps
+
+log = logging.getLogger(__name__)
 
 # Prefer whatever's on PATH (e.g. a Homebrew install on macOS) and only fall
 # back to the UB-Mannheim installer's Windows default if tesseract isn't
@@ -32,4 +35,6 @@ def read_text(image: Image.Image, digits_only: bool = False, threshold: int | No
     config = "--psm 7"  # treat region as a single line of text
     if digits_only:
         config += " -c tessedit_char_whitelist=0123456789,./%"
-    return pytesseract.image_to_string(processed, config=config).strip()
+    text = pytesseract.image_to_string(processed, config=config).strip()
+    log.debug("OCR (tesseract, digits_only=%s): %r", digits_only, text)
+    return text

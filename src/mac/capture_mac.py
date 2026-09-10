@@ -3,6 +3,7 @@
 Mirrors win/capture_win.py's public surface exactly, backed by Quartz/AppKit
 (pyobjc) instead of win32gui.
 """
+import logging
 from dataclasses import dataclass
 
 import mss
@@ -13,6 +14,8 @@ from Quartz import (
     kCGNullWindowID,
     kCGWindowListOptionOnScreenOnly,
 )
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -75,6 +78,7 @@ def find_window(title_substring: str) -> int:
             continue  # skip menu bar, desktop, etc. - normal app windows are layer 0
         name = info.get("kCGWindowName", "") or ""
         if needle in name.lower():
+            log.debug("Found window %r matching %r", name, title_substring)
             return int(info["kCGWindowNumber"])
     raise RuntimeError(
         f"No game window matching {title_substring!r} found. No game running, or in "
@@ -128,6 +132,7 @@ def screenshot_window(hwnd: int) -> Image.Image:
     owner_pid = info.get("kCGWindowOwnerPID")
     frontmost = NSWorkspace.sharedWorkspace().frontmostApplication()
     if frontmost is None or frontmost.processIdentifier() != owner_pid:
+        log.warning("Refusing screenshot: window %d is not foreground", hwnd)
         raise RuntimeError(
             "Target window is not in the foreground (something else is covering it, "
             "or it's minimized/switched away from) - bring it to front before capturing, "

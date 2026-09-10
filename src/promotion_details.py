@@ -17,12 +17,15 @@ before ever OCRing that box, by checking the PROMOTE/PROMOTED button text
 instead ("PROMOTED" vs "PROMOTE") - a clean, unambiguous text signal that
 stays in the same place across every promotion state.
 """
+import logging
 import time
 
 from capture import screenshot_region
 from input_control import click
 from ocr import preprocess, pytesseract, read_text
 from profiles.ui_layout import get_layout, require_field
+
+log = logging.getLogger(__name__)
 
 _ROMAN_TO_LEVEL = {"I": 1, "II": 2, "III": 3, "IV": 4, "V": 5}
 
@@ -46,7 +49,9 @@ def _is_maxed(hwnd, layout) -> bool:
     # an exact match.
     box = require_field(layout.promote_button_box, "promote_button_box")
     text = read_text(screenshot_region(hwnd, box))
-    return "PROMOTED" in text.upper()
+    maxed = "PROMOTED" in text.upper()
+    log.debug("Promote button OCR: %r -> maxed=%s", text, maxed)
+    return maxed
 
 
 def read_promotion_level(hwnd, layout) -> int:
@@ -59,7 +64,9 @@ def read_promotion_level(hwnd, layout) -> int:
         return 6
 
     text = _read_badge_text(hwnd, layout)
-    return _ROMAN_TO_LEVEL.get(text, 0)
+    level = _ROMAN_TO_LEVEL.get(text, 0)
+    log.debug("Promotion badge OCR: %r -> level=%d", text, level)
+    return level
 
 
 def read_promotion(hwnd) -> dict:
@@ -68,4 +75,6 @@ def read_promotion(hwnd) -> dict:
     layout = get_layout(hwnd)
     click(hwnd, *layout.promote_tab)
     time.sleep(0.2)
-    return {"level": read_promotion_level(hwnd, layout)}
+    level = read_promotion_level(hwnd, layout)
+    log.info("Promotion level: %d", level)
+    return {"level": level}

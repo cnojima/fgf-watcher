@@ -7,6 +7,7 @@ up to 5 equipped-component thumbnails at the bottom of the panel opens that
 component's detail without navigating away - the other thumbnails stay
 clickable in the same panel, so reading all 5 never needs to back out.
 """
+import logging
 import re
 import time
 from pathlib import Path
@@ -17,6 +18,7 @@ from ocr import preprocess, pytesseract, read_text
 from profiles.ui_layout import get_layout, require_field
 
 DEBUG_DIR = Path(__file__).resolve().parent.parent / "data"
+log = logging.getLogger(__name__)
 
 # The Component tab has two distinct layouts: right after clicking
 # component_tab it shows a grid of 5 icons arranged around the ship (with a
@@ -75,6 +77,7 @@ def read_component(hwnd, layout) -> dict:
     name = _normalize_name(read_text(screenshot_region(hwnd, name_box), upscale=3))
     rarity = read_text(screenshot_region(hwnd, rarity_box), upscale=3).rstrip(" _")
     level = read_text(screenshot_region(hwnd, level_box), upscale=3)
+    log.debug("Component: name=%r rarity=%r level=%r", name, rarity, level)
     return {
         "name": name,
         "rarity": rarity,
@@ -87,7 +90,7 @@ def read_component(hwnd, layout) -> dict:
 def read_all_components(hwnd, name) -> list[dict]:
     """Assumes the ship's Overview tab is currently showing (i.e. same entry
     point as attribute_details.read_attribute_details)."""
-    print(f"{name}: collecting Component Details")
+    log.info("%s: collecting Component Details", name)
     layout = get_layout(hwnd)
 
     # Debug evidence, not a guess: if this tab switch isn't landing, look at
@@ -108,4 +111,5 @@ def read_all_components(hwnd, name) -> list[dict]:
         click(hwnd, *position)
         time.sleep(0.2)
         components.append(read_component(hwnd, layout))
+    log.info("%s: read %d component(s)", name, len(components))
     return components

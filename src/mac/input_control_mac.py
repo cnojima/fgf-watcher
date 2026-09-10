@@ -4,6 +4,7 @@ at coordinates relative to its frame - macOS backend.
 Mirrors win/input_control_win.py's public surface exactly, backed by Quartz
 CGEvent posting (pyobjc) instead of pydirectinput.
 """
+import logging
 import subprocess
 import time
 
@@ -21,6 +22,8 @@ from Quartz import (
 )
 
 from mac.capture_mac import _find_window_info, get_window_rect
+
+log = logging.getLogger(__name__)
 
 # Virtual keycodes (US ANSI layout) for the fixed set of keys this repo
 # actually uses - see nav.py's OVERLAYS / BASE_VIEW_TOGGLE_KEY. CGEvent
@@ -89,6 +92,7 @@ def focus_window(hwnd: int) -> None:
     while time.time() < deadline:
         frontmost = NSWorkspace.sharedWorkspace().frontmostApplication()
         if frontmost is not None and frontmost.processIdentifier() == pid:
+            log.debug("Focused %r", app.localizedName())
             return
         time.sleep(0.05)
 
@@ -107,6 +111,7 @@ def focus_window(hwnd: int) -> None:
 
 def click(hwnd: int, x: int, y: int) -> None:
     """x, y are points relative to the window's frame (same frame as calibrate.py)."""
+    log.debug("click(%d, %d)", x, y)
     focus_window(hwnd)
     rect = get_window_rect(hwnd)
     px, py = rect.left + x, rect.top + y
@@ -116,6 +121,7 @@ def click(hwnd: int, x: int, y: int) -> None:
 
 
 def press_key(hwnd: int, key: str) -> None:
+    log.debug("press_key(%r)", key)
     focus_window(hwnd)
     try:
         keycode = _KEYCODES[key]
@@ -137,6 +143,7 @@ def drag(hwnd: int, start_x: int, start_y: int, end_x: int, end_y: int,
     intermediate points, then hold at the end point before releasing, so this
     game's momentum-scrolling lists read it as a deliberate stop rather than a
     flick (see win/input_control_win.py's docstring for why that matters)."""
+    log.debug("drag((%d, %d) -> (%d, %d))", start_x, start_y, end_x, end_y)
     focus_window(hwnd)
     rect = get_window_rect(hwnd)
     sx, sy = rect.left + start_x, rect.top + start_y

@@ -11,10 +11,13 @@ that's the key - not resolution name, aspect ratio, or DPI% alone (those are
 contributing factors, but the final captured pixel size is what calibrated
 data actually depends on).
 """
+import logging
 import sys
 from typing import TypeVar
 
 from capture import describe_display_scale, get_window_rect
+
+log = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -32,13 +35,16 @@ def select_profile(hwnd, profiles: dict[ProfileKey, T], data_name: str) -> T:
     size = (rect.width, rect.height)
     key: ProfileKey = (sys.platform, size)
     if key in profiles:
+        log.debug("Selected %s profile for exact match %s", data_name, key)
         return profiles[key]
 
     fallback: ProfileKey = (sys.platform, (0, 0))
     if fallback in profiles:
+        log.debug("Selected %s profile via fallback (no exact match for %s)", data_name, key)
         return profiles[fallback]
 
     known = ", ".join(f"{plat} {w}x{h}" for plat, (w, h) in profiles) or "(none)"
+    log.error("No calibrated %s for window size %s", data_name, size)
     raise RuntimeError(
         f"No calibrated {data_name} for this window - detected {sys.platform} at "
         f"{size[0]}x{size[1]} ({describe_display_scale(hwnd)}).\n"

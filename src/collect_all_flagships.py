@@ -13,6 +13,7 @@ and move between ships with the left/right arrows, never re-entering the
 list at all. Confirmed clean across repeated runs earlier this session.
 """
 import json
+import logging
 import re
 import time
 from pathlib import Path
@@ -20,6 +21,7 @@ from pathlib import Path
 from capture import find_window, screenshot_region
 from profiles.fingerprints import current_screen
 from input_control import click, focus_window, press_key
+from logging_setup import configure_logging
 from nav import goto, back
 from ocr import preprocess, pytesseract
 from attribute_details import read_attribute_details, validate_sections
@@ -30,6 +32,7 @@ from profiles.ui_layout import get_layout
 import ocr_easy
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "attributes"
+log = logging.getLogger(__name__)
 
 
 def _read_ship_name(hwnd, layout) -> str:
@@ -48,10 +51,13 @@ def _is_ship_unlocked(hwnd, layout) -> bool:
     ship, so this checks for any digit rather than requiring the word."""
     img = screenshot_region(hwnd, layout.level_badge_box)
     text = pytesseract.image_to_string(preprocess(img, upscale=2), config="--psm 11").strip()
-    return bool(re.search(r"\d", text))
+    unlocked = bool(re.search(r"\d", text))
+    log.debug("Level badge OCR: %r -> unlocked=%s", text, unlocked)
+    return unlocked
 
 
 def collect_all_flagships(hwnd) -> dict[str, dict]:
+    log.info("Starting flagship collection")
     layout = get_layout(hwnd)
 
     # screenshot_window() (used by current_screen() below, and transitively by
@@ -101,7 +107,10 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
             name = _read_ship_name(hwnd, layout)
 
         if not name or name in results:
+            log.debug("Ship name %r empty or already seen - wrapped around fleet list", name)
             break  # wrapped back around to a ship we've already seen
+
+        log.info("%s: starting collection", name)
 
         # Paging to a ship with the side arrows leaves whichever tab
         # (Overview/Component/Promote) was active for the *previous* ship
@@ -121,10 +130,14 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
             # slot after that may or may not be unlocked. Check this before
             # the expensive attribute scroll-read, not after, so a locked
             # slot costs one cheap OCR call instead of a full failed scan.
+            log.info("%s: no Level badge found - locked slot, stopping", name)
             break
 
         data = read_attribute_details(hwnd, name)
         validation = validate_sections(data)
+        invalid = [s for s, r in validation.items() if not r["valid"]]
+        if invalid:
+            log.warning("%s: %d section(s) failed validation: %s", name, len(invalid), invalid)
         results[name] = data
 
         # Deliberately overrides nav.py's "never use ESC" rule (it's normally
@@ -146,6 +159,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         back(hwnd)
         time.sleep(0.2)
         promotion = read_promotion(hwnd)
+        log.info("%s: promotion level %s, %d component(s) read", name, promotion["level"], len(components))
 
         out_path = DATA_DIR / f"{name}.json"
         with open(out_path, "w", encoding="utf-8") as f:
@@ -156,6 +170,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
                 },
                 f, indent=2,
             )
+        log.info("%s: saved to %s", name, out_path)
 
         click(hwnd, *layout.right_arrow)  # page to the next ship, still on the Promote tab
         time.sleep(0.2)
@@ -163,13 +178,15 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
     # Loop exits with the view on the wrapped-around ship's Promote tab (see
     # the note above) - one back() from there reaches the fleet list.
     back(hwnd)
+    log.info("Finished flagship collection: %d ship(s)", len(results))
     return results
 
 
 if __name__ == "__main__":
+    configure_logging()
     # "Foundation Galactic Frontier" (no colon) doesn't substring-match the
     # game's real window title "Foundation: Galactic Frontier" - confirmed
     # live via capture.list_windows(), not a guess.
     hwnd = find_window("Galactic Frontier")
     collected = collect_all_flagships(hwnd)
-    print(f"Collected {len(collected)} ship(s): {list(collected)}")
+    log.info("Collected %d ship(s): %s", len(collected), list(collected))

@@ -1,10 +1,13 @@
 """Locate a game window and grab screenshots of it (or regions within it)."""
 import ctypes
+import logging
 from dataclasses import dataclass
 
 import mss
 import win32gui
 from PIL import Image
+
+log = logging.getLogger(__name__)
 
 # Must happen before any win32gui coordinate queries or mss capture: without it,
 # this process is DPI-unaware and win32gui returns coordinates in a virtualized
@@ -48,6 +51,7 @@ def find_window(title_substring: str) -> int:
     if not matches:
         raise RuntimeError(f"No visible window found matching {title_substring!r}")
     hwnd, title = matches[0]
+    log.debug("Found window %r matching %r", title, title_substring)
     return hwnd
 
 
@@ -83,6 +87,7 @@ def screenshot_window(hwnd: int) -> Image.Image:
     rather than return a screenshot of whatever's covering it.
     """
     if win32gui.GetForegroundWindow() != hwnd:
+        log.warning("Refusing screenshot: window %d is not foreground", hwnd)
         raise RuntimeError(
             "Target window is not in the foreground (something else is covering it, "
             "or it's minimized/alt-tabbed away) - bring it to front before capturing, "

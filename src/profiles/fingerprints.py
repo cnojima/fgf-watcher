@@ -15,10 +15,13 @@ fingerprint calibrated at one window size lands on the wrong pixel entirely at
 another, confirmed live: this file's system_map fingerprint missed completely
 against a differently-sized macOS window.
 """
+import logging
 from dataclasses import dataclass
 
 from capture import screenshot_window
 from display_profiles import ProfileKey, select_profile
+
+log = logging.getLogger(__name__)
 
 RGB = tuple[int, int, int]
 
@@ -86,7 +89,9 @@ def current_screen(hwnd) -> str | None:
     img = screenshot_window(hwnd)
     for name, fp in fingerprints.items():
         if all(_close(img.getpixel((x, y)), rgb, fp.tolerance) for x, y, rgb in fp.points):
+            log.debug("current_screen() -> %r", name)
             return name
+    log.debug("current_screen() -> None (no fingerprint matched)")
     return None
 
 
