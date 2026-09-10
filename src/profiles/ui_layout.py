@@ -67,6 +67,9 @@ class UILayout:
     # overview_details.py. Same "None until calibrated" rule as above.
     element_icon_box: tuple[int, int, int, int] | None = None  # element-type badge, top-left of Overview tab
 
+    # empowerment_details.py. Same "None until calibrated" rule as above.
+    empowerment_box: tuple[int, int, int, int] | None = None  # "+N" empowerment value, below the element badge
+
     @property
     def expected_scroll_offset(self) -> int:
         return self.drag_from[1] - self.drag_to[1]
@@ -185,6 +188,15 @@ _LAYOUT_PROFILES: dict[ProfileKey, UILayout] = {
         # crop against a reference icon side by side, not just a bad match
         # score alone (see CLAUDE.md: never trust a coordinate without zoom).
         element_icon_box=(362, 96, 398, 132),
+        # Confirmed via calibrate.py zoom against a live Gram Overview tab:
+        # the "+N" empowerment value, directly below the element badge. Box
+        # deliberately excludes the leading "+" glyph itself, not just the
+        # icon - confirmed live that including it made Tesseract misread it
+        # as a stray "4" digit (e.g. "+12" -> "412") even under a digit-only
+        # whitelist; cropping it out entirely was the only fix that worked,
+        # not a whitelist/psm change (see CLAUDE.md: capture evidence first).
+        # Width allows for the full 0-21 range (1-2 digits).
+        empowerment_box=(397, 147, 430, 181),
     )
 }
 

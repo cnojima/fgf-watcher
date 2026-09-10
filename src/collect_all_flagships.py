@@ -26,6 +26,7 @@ from nav import goto, back
 from ocr import preprocess, pytesseract
 from attribute_details import read_attribute_details, validate_sections
 from component_details import read_all_components
+from empowerment_details import read_empowerment
 from overview_details import read_ship_element
 from promotion_details import read_promotion
 from flagships import MAX_SHIPS
@@ -135,6 +136,7 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
             break
 
         element = read_ship_element(hwnd, layout)
+        empowerment = read_empowerment(hwnd, layout)
         data = read_attribute_details(hwnd, name)
         validation = validate_sections(data)
         invalid = [s for s, r in validation.items() if not r["valid"]]
@@ -167,7 +169,8 @@ def collect_all_flagships(hwnd) -> dict[str, dict]:
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(
                 {
-                    "ship": name, "element": element, "attributes": data, "validation": validation,
+                    "ship": name, "element": element, "empowerment": empowerment,
+                    "attributes": data, "validation": validation,
                     "components": components, "promotion": promotion,
                 },
                 f, indent=2,
