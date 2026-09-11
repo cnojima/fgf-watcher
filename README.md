@@ -2,23 +2,30 @@
 
 Capture a game window, OCR specific stat regions, log values over time, and (optionally) drive menu input.
 
-Built and tested against Python 3.12 + Tesseract 5.4 on Windows, targeting a windowed
+Built and tested against Python 3.12 + PaddleOCR on Windows, targeting a windowed
 (non-fullscreen-exclusive) game. Also supports macOS against a native Mac build of the
 same game, via a separate capture/input backend (see "macOS setup" below) — **fullscreen
 is unsupported on either platform** (see "Windowed, fixed-size only" below); everything
-else in this repo (`nav.py`, `calibrate.py`, `ocr.py`, `tracker.py`, etc.) is
+else in this repo (`nav.py`, `calibrate.py`, `paddle_ocr.py`, `tracker.py`, etc.) is
 platform-agnostic and needs no changes to work on either OS.
+
+All OCR goes through PaddleOCR now (`paddle_ocr.py` for single-line text,
+`paddle_ocr_blocks.py` for multi-line blocks like stat tables, plus two small
+fine-tuned models - `orange_kid_ocr.py` for level-badge digits,
+`promotion_badge_ocr.py` for the Promote tab's Roman-numeral badge - for the two
+places PaddleOCR's stock recognizer didn't already read a custom game icon/font
+correctly). Tesseract and EasyOCR were both dropped this session after directly
+confirming PaddleOCR reads this game's stylized fonts as well or better across
+every field checked - see `ocr_training/` for the fine-tuning work and CLAUDE.md
+for the fuller investigation.
 
 ## Setup (already done in this environment, Windows)
 
 - Python 3.12: `C:\Users\cnoji\AppData\Local\Programs\Python\Python312\python.exe`
-- Tesseract OCR: `C:\Program Files\Tesseract-OCR\tesseract.exe` (`src/ocr.py` uses whatever's
-  on `PATH` first, falling back to this path)
-- EasyOCR (`ocr_easy.py`): a heavier fallback engine for text Tesseract can't read even with
-  a correctly-sized box (see Known gotchas) — installed via `requirements.txt` below, pulls
-  in torch, and downloads its model weights on first use (needs network access that once).
-- Python deps: `pip install -r requirements.txt` (mss, pywin32, pytesseract, pillow,
-  pydirectinput, easyocr)
+- Python deps: `pip install -r requirements.txt` (mss, pywin32, pillow, pydirectinput,
+  paddlepaddle, paddleocr) - no external OCR binary to install; `paddlepaddle` and
+  `paddleocr` are plain pip packages (each listed explicitly - neither pulls the
+  other in automatically, checked directly via `pip show`).
 
 **The game runs elevated (as Administrator).** Windows blocks synthetic input from a
 lower-integrity process to a higher-integrity window (UIPI), so any script that clicks or
@@ -31,7 +38,6 @@ scripts here don't try to.
 
 ## macOS setup
 
-- `brew install tesseract`
 - `pip install -r requirements.txt` — installs `pyobjc-framework-Quartz` and
   `pyobjc-framework-Cocoa` instead of the Windows-only `pywin32`/`pydirectinput`
   (environment markers in `requirements.txt` pick the right set automatically).
@@ -154,7 +160,10 @@ below.
 
 7. **Example feature: reading owned flagships** (`src/flagships.py`) — opens the fleet
    list, pages through the ship detail view (1-4 ships), and OCRs each ship's name with
-   `ocr_easy.py` (EasyOCR) rather than Tesseract. See "Known gotchas" below for why.
+   `paddle_ocr.py`. Ship/champion names render in a stylized display font
+   ("Foundation FP") that both Tesseract and EasyOCR needed workarounds for; PaddleOCR's
+   stock recognizer reads it correctly with no fine-tuning, confirmed against real
+   captures (see CLAUDE.md).
 
 8. **Example feature: reading a ship's full stat breakdown** (`src/attribute_details.py`)
    — opens the "Attribute Details" modal and scrolls through its full, longer-than-one-
@@ -177,15 +186,17 @@ below.
 
 10. **Example feature: reading a ship's promotion level** (`src/promotion_details.py`) — the
     Promote tab renders two structurally different layouts depending on state. An unmaxed
-    ship (level 0-5) shows a "current → next" comparison row with a triangle badge - a Roman
-    numeral (I-V) for levels 1-5, or a muted star/cross glyph (no numeral) for level 0. A
-    maxed ship (level 6) drops that whole row, shifting everything below it up - so the same
-    fixed badge box no longer lines up with anything meaningful. `read_promotion_level()`
-    reads the badge first (covers levels 0-5 via OCR, empty for a numeral means level 0 once
-    the max case below is ruled out), and falls back to OCRing the PROMOTE/PROMOTED button
-    text - the one element confirmed to sit in the same place in *both* layouts - to tell
-    level 0 apart from max. See CLAUDE.md for how this was calibrated against real ships at
-    level 0, level I, and max.
+    ship (level 0-5) shows a "current → next" comparison row with a badge - a differently
+    shaped/colored icon per tier (I-V), or a muted star/cross glyph (no numeral) for level
+    0. A maxed ship (level 6) drops that whole row, shifting everything below it up - so
+    the same fixed badge box no longer lines up with anything meaningful.
+    `read_promotion_level()` checks the PROMOTE/PROMOTED button text first (the one element
+    confirmed to sit in the same place in *both* layouts) to detect max, then reads the
+    badge via `promotion_badge_ocr.py` - a small model fine-tuned on real captures of this
+    icon, since PaddleOCR's stock recognizer misread it as a bare "A" (see
+    `ocr_training/generate_promotion_badge_data.py`). Level 0 is detected with a pixel
+    brightness check rather than trusting the recognizer to output "nothing" for a
+    look-alike icon - a CTC-based OCR model isn't built to abstain, it confidently guesses.
 
 11. **Example feature: collecting every owned flagship's full stats**
     (`src/collect_all_flagships.py`) — opens the fleet list, pages through every owned ship
@@ -232,17 +243,16 @@ one directly confirmed at that exact size).
   by re-cropping with a taller box (`y: 5-80`): both engines then read every name
   correctly. Before concluding an engine/font can't handle some text, save the crop and
   look at it — if a descender is cut off, that's the bug, not the OCR.
-- **Don't hard-threshold/binarize game UI text.** `src/ocr.py`'s `preprocess()` used to
-  apply a fixed-cutoff black/white threshold, which looked cleaner to the eye but actually
-  *destroyed* OCR accuracy — anti-aliased UI fonts lost their edges and Tesseract read
-  garbage. Default is now grayscale + 3x upscale only, no threshold. Only pass a
-  `threshold=` value if you've confirmed it helps for a specific noisy-background region.
-- **Decorative title fonts can still defeat Tesseract even with a correct box** — the
-  "FLAGSHIP" screen title (heavy tracking, gradient fill) reads as garbage under every
-  PSM mode tried. EasyOCR reads it about as well as Tesseract (still imperfect: `'FLHecl'`).
-  This is a real font-rendering limit, unlike the descender issue above — don't waste time
-  re-tuning the box for something like this; use a pixel fingerprint instead (see
-  `fingerprints.py`) since you only need to *detect* the screen, not transcribe the title.
+- **Don't hard-threshold/binarize game UI text.** This was a real problem for Tesseract
+  (dropped this session, see below) — a fixed-cutoff black/white threshold looked cleaner
+  to the eye but destroyed anti-aliased UI fonts' edges. Not applicable to `paddle_ocr.py`/
+  `paddle_ocr_blocks.py`, which don't threshold at all; noted here for history.
+- **Decorative title fonts defeated both Tesseract and EasyOCR even with a correct box** —
+  the "FLAGSHIP" screen title (heavy tracking, gradient fill) read as garbage under every
+  Tesseract PSM mode tried, and EasyOCR did about as well (still imperfect: `'FLHecl'`).
+  Not yet re-tested against PaddleOCR specifically - this screen is still detected via a
+  pixel fingerprint (`fingerprints.py`) rather than OCR'd, which remains the right call
+  regardless (only the screen's *presence* is needed, not the title text itself).
 - **`screenshot_window()` refuses to capture unless the target window is actually in the
   foreground.** `mss` grabs a screen *region* at the window's last-known coordinates, not
   the window's content directly — if another window (browser, alt-tab) covers that region,
@@ -371,17 +381,17 @@ one directly confirmed at that exact size).
 
 ## Next steps to consider
 
-- If a HUD has a genuinely noisy background, try `read_text(image, threshold=N)` per-region
-  rather than changing the global default.
-- For numeric-only stats, `digits_only: true` in a region's config restricts Tesseract's
-  character whitelist, which helps a lot with 0/O and 1/l confusion.
-- **Default to Tesseract (`ocr.py`) for new regions, not EasyOCR.** `flagships.py` uses
-  EasyOCR (`ocr_easy.py`) for ship names, but once the descender-clipping bug above was
-  fixed, Tesseract read those same names correctly too — the engine wasn't the problem.
-  EasyOCR is slower (a torch model to load) and a much heavier dependency; reach for it
-  only after confirming a *correctly-sized* box still fails on Tesseract, which so far has
-  only been true for decorative titles like "FLAGSHIP" that we don't actually need to OCR
-  (a pixel fingerprint identifies the screen instead).
+- For numeric-only stats, `tracker.py`'s `digits_only: true` now does a regex post-filter
+  on `paddle_ocr.py`'s output rather than a Tesseract character whitelist (which PaddleOCR
+  has no equivalent of per-call) - same effect, different mechanism.
+- **Default to `paddle_ocr.py` (single-line) / `paddle_ocr_blocks.py` (multi-line) for new
+  regions.** Confirmed this session across every field checked in this codebase that
+  PaddleOCR's stock recognizer matches or beats both Tesseract and EasyOCR, including
+  stylized fonts that used to need EasyOCR as a workaround. Reach for a dedicated
+  fine-tuned model (see `ocr_training/`, `orange_kid_ocr.py`, `promotion_badge_ocr.py`)
+  only after confirming a correctly-sized box still fails on stock PaddleOCR - so far
+  that's only been true for two small custom game icons the stock recognizer
+  misinterpreted as different characters/letters entirely (not a resolution issue).
 - Only 3 of ~7 catalogued screens (`system_map`, `fleet_list`, `city_view`) have pixel
   fingerprints in `fingerprints.py`. `storage`, `champion`, `guild`, `radiant`, and `chat`
   are wired into `nav.py`'s key mappings but `goto()` can't verify arrival for them yet.

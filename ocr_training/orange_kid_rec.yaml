@@ -1,0 +1,51 @@
+# Fine-tune PaddleOCR's lightweight English recognition model on the
+# game's "orange kid" level-badge digit font (see generate_orange_kid_data.py
+# for how the dataset was synthesized from the real, extracted font file).
+#
+# Run from the ocr_training/ directory with the .venv-paddle interpreter
+# (paddlepaddle has no wheel for this project's main .venv's Python version
+# - see the ocr-training scoping conversation):
+#   .venv-paddle/bin/paddlex --pipeline ... (not used - see train.py instead)
+# Training is driven by paddlex's Python API (train.py) rather than a CLI
+# invocation, since the CLI's --pipeline flag is for inference pipelines,
+# not module training - module training goes through
+# paddlex.modules.text_recognition's trainer directly.
+Global:
+  model: en_PP-OCRv4_mobile_rec
+  mode: train # check_dataset/train/evaluate/predict
+  dataset_dir: "orange_kid_dataset"
+  device: gpu:0
+  output: "output"
+
+CheckDataset:
+  convert:
+    enable: False
+    src_dataset_type: null
+  split:
+    enable: False
+    train_percent: null
+    val_percent: null
+
+Train:
+  epochs_iters: 20
+  batch_size: 256
+  learning_rate: 0.001
+  pretrain_weight_path: https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/en_PP-OCRv4_mobile_rec_pretrained.pdparams
+  resume_path: null
+  log_interval: 20
+  eval_interval: 1
+  save_interval: 1
+
+Evaluate:
+  weight_path: "output/best_accuracy/best_accuracy.pdparams"
+  log_interval: 1
+
+Export:
+  weight_path: "output/best_accuracy/best_accuracy.pdparams"
+
+Predict:
+  batch_size: 1
+  model_dir: "output/best_accuracy/inference"
+  input: "orange_kid_dataset/val/images/000000.jpg"
+  kernel_option:
+    run_mode: paddle

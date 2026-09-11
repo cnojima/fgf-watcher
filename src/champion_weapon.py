@@ -35,10 +35,12 @@ import logging
 import re
 import time
 
+import orange_kid_ocr
+import paddle_ocr
+import paddle_ocr_blocks
 from capture import screenshot_region, screenshot_window
 from input_control import click
 from nav import back
-from ocr import preprocess, pytesseract, read_text
 from profiles.champion_layout import ChampionLayout, require_field
 from profiles.notifications import dismiss_if_present
 from scroll_stitch import stitch_scrolled_region
@@ -115,18 +117,20 @@ def is_weapon_maxed(hwnd, layout: ChampionLayout) -> bool:
 
 
 def _find_keyword(text: str, vocabulary: tuple[str, ...]) -> str | None:
-    for word in re.findall(r"[A-Za-z]+", text.upper()):
+    upper = text.upper()
+    for word in re.findall(r"[A-Za-z]+", upper):
         match = difflib.get_close_matches(word, [v.upper() for v in vocabulary], n=1, cutoff=0.7)
         if match:
             return match[0].lower()
+    # A clean OCR read (PaddleOCR) can merge two adjacent badge words with
+    # no space between them ("KINETICATTACK") where Tesseract's garbled
+    # output happened to keep them apart - substring match catches that;
+    # skipped above since fuzzy-matching the merged blob against a whole
+    # vocabulary word almost never clears the 0.7 cutoff.
+    for v in vocabulary:
+        if v.upper() in upper:
+            return v.lower()
     return None
-
-
-def _read_int(hwnd, layout: ChampionLayout, box_attr: str) -> int | None:
-    box = getattr(layout, box_attr)
-    text = read_text(screenshot_region(hwnd, box), upscale=3)
-    digits = re.sub(r"[^\d]", "", text)
-    return int(digits) if digits else None
 
 
 def _clean_leading_noise(line: str) -> str:
@@ -167,7 +171,7 @@ def _read_stats(hwnd, layout: ChampionLayout) -> dict[str, str]:
         require_field(layout.weapon_stats_drag_to, "weapon_stats_drag_to"),
         layout.weapon_stats_expected_scroll_offset, max_scrolls=10,
     )
-    text = pytesseract.image_to_string(preprocess(composite, upscale=2), config="--psm 6").strip()
+    text = paddle_ocr_blocks.read_text_block(composite)
     stats = {}
     for line in _join_wrapped_lines(text):
         m = _STAT_LINE.match(_clean_leading_noise(line))
@@ -204,7 +208,7 @@ def _read_bonuses(hwnd, layout: ChampionLayout) -> dict[str, str]:
         click(hwnd, x, y)
         time.sleep(0.4)
         img = screenshot_region(hwnd, info_box)
-        bonuses[slot] = pytesseract.image_to_string(preprocess(img, upscale=2), config="--psm 6").strip()
+        bonuses[slot] = paddle_ocr_blocks.read_text_block(img)
         click(hwnd, x, y)  # close it again before the next one
         time.sleep(0.3)
     return bonuses
@@ -222,19 +226,19 @@ def read_weapon(hwnd, layout: ChampionLayout) -> dict:
     dismiss_if_present(hwnd)
 
     name_box = require_field(layout.weapon_name_box, "weapon_name_box")
-    name = read_text(screenshot_region(hwnd, name_box), upscale=3)
+    name = paddle_ocr.read_text(screenshot_region(hwnd, name_box))
     if not name or not _NAME_PATTERN.match(name):
         # Still-uncaught overlay (banner slid in after the check above, or
         # some other render-timing miss) - one retry after a brief pause,
         # same "wait it out" fix used elsewhere in this codebase (e.g.
         # collect_all_flagships._read_ship_name).
         time.sleep(0.5)
-        name = read_text(screenshot_region(hwnd, name_box), upscale=3)
+        name = paddle_ocr.read_text(screenshot_region(hwnd, name_box))
     if not name:
         log.warning("weapon_name_box read empty even after retry - proceeding with an empty name")
 
     badge_box = require_field(layout.weapon_element_type_box, "weapon_element_type_box")
-    badge_text = read_text(screenshot_region(hwnd, badge_box), upscale=3)
+    badge_text = paddle_ocr.read_text(screenshot_region(hwnd, badge_box))
     element = _find_keyword(badge_text, _ELEMENTS)
     weapon_type = _find_keyword(badge_text, _TYPES)
     if element is None and weapon_type is None:
@@ -243,10 +247,13 @@ def read_weapon(hwnd, layout: ChampionLayout) -> dict:
         # rather than a genuinely unmatched word - one retry, same reasoning
         # as the name retry above.
         time.sleep(0.5)
-        badge_text = read_text(screenshot_region(hwnd, badge_box), upscale=3)
+        badge_text = paddle_ocr.read_text(screenshot_region(hwnd, badge_box))
         element = _find_keyword(badge_text, _ELEMENTS)
         weapon_type = _find_keyword(badge_text, _TYPES)
-    level = _read_int(hwnd, layout, "weapon_level_box")
+    # Same "orange kid" badge font as champion_info.py's level field - see
+    # its docstring and ocr_training/ for how this model replaced the old
+    # Tesseract/EasyOCR attempts.
+    level = orange_kid_ocr.read_level(screenshot_region(hwnd, layout.weapon_level_box))
 
     result = {
         "name": name,
@@ -283,7 +290,7 @@ def close_weapon_page(hwnd, layout: ChampionLayout) -> None:
     up, calibrate weapon_select_list_label_box/_close and this bypass stops
     applying."""
     if layout.weapon_select_list_label_box is not None:
-        label_text = read_text(screenshot_region(hwnd, layout.weapon_select_list_label_box), upscale=3)
+        label_text = paddle_ocr.read_text(screenshot_region(hwnd, layout.weapon_select_list_label_box))
         if "select" in label_text.lower():
             log.debug("Weapon page is the 'Select Weapon' browse variant - closing via its X button")
             click(hwnd, *require_field(layout.weapon_select_list_close, "weapon_select_list_close"))

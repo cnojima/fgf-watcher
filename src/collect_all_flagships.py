@@ -18,12 +18,12 @@ import re
 import time
 from pathlib import Path
 
+import paddle_ocr
 from capture import find_window, screenshot_region
 from profiles.fingerprints import current_screen
 from input_control import click, focus_window, press_key
 from logging_setup import configure_logging
 from nav import goto, back
-from ocr import preprocess, pytesseract
 from attribute_details import read_attribute_details, validate_sections
 from component_details import read_all_components
 from empowerment_details import read_empowerment
@@ -31,7 +31,6 @@ from overview_details import read_ship_element
 from promotion_details import read_promotion
 from flagships import MAX_SHIPS
 from profiles.ui_layout import get_layout
-import ocr_easy
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "attributes"
 log = logging.getLogger(__name__)
@@ -39,20 +38,18 @@ log = logging.getLogger(__name__)
 
 def _read_ship_name(hwnd, layout) -> str:
     img = screenshot_region(hwnd, layout.name_box)
-    return ocr_easy.read_text(img)
+    return paddle_ocr.read_text(img)
 
 
 def _is_ship_unlocked(hwnd, layout) -> bool:
     """Cheap check done *before* the expensive attribute scroll-read: an
     unlocked ship's Overview tab shows a "Level NN" badge; a locked slot's
-    preview doesn't. psm 11 (sparse text) is what actually reads the digits
-    here - psm 6 (the usual multi-line default) came back empty on this
-    badge in testing despite the crop being visibly correct, for reasons
-    not fully understood; 11 is confirmed to work. Only the digits matter -
-    the word "Level" itself doesn't reliably come through even on a real
-    ship, so this checks for any digit rather than requiring the word."""
+    preview doesn't. Only the digits matter - the word "Level" itself
+    doesn't reliably come through even on a real ship (true under Tesseract;
+    not yet re-confirmed under paddle_ocr), so this checks for any digit
+    rather than requiring the word."""
     img = screenshot_region(hwnd, layout.level_badge_box)
-    text = pytesseract.image_to_string(preprocess(img, upscale=2), config="--psm 11").strip()
+    text = paddle_ocr.read_text(img)
     unlocked = bool(re.search(r"\d", text))
     log.debug("Level badge OCR: %r -> unlocked=%s", text, unlocked)
     return unlocked

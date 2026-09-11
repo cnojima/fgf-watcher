@@ -20,9 +20,10 @@ stays in the same place across every promotion state.
 import logging
 import time
 
+import paddle_ocr
+import promotion_badge_ocr
 from capture import screenshot_region
 from input_control import click
-from ocr import preprocess, pytesseract, read_text
 from profiles.ui_layout import get_layout, require_field
 
 log = logging.getLogger(__name__)
@@ -33,12 +34,22 @@ _ROMAN_TO_LEVEL = {"I": 1, "II": 2, "III": 3, "IV": 4, "V": 5}
 def _read_badge_text(hwnd, layout) -> str:
     # Tightly bounds the current-level badge slot. Only called after
     # _is_maxed() has ruled out level 6 - on a maxed ship this same box
-    # holds a bright star badge that gets OCR'd as a stray "V" under this
-    # whitelist instead of coming back empty (see module docstring).
+    # holds a bright star badge that gets OCR'd as a stray "V" under the old
+    # Tesseract whitelist instead of coming back empty (see module
+    # docstring) - not re-verified against the model below, since this
+    # level-6 case is never actually reached (checked first, unconditionally).
+    #
+    # Uses a dedicated fine-tuned model (promotion_badge_ocr.py), not
+    # paddle_ocr's general stock recognizer - tested live this session and
+    # stock PaddleOCR misread this exact badge (a level-I ship, "Gram") as a
+    # bare "A" consistently across 1x-4x upscaling, a real failure on this
+    # icon shape, not a resolution issue. See
+    # ocr_training/generate_promotion_badge_data.py and
+    # promotion_badge_ocr.py's docstring for how that model was trained and
+    # its own known level-0 blind spot.
     box = require_field(layout.promotion_badge_box, "promotion_badge_box")
     img = screenshot_region(hwnd, box)
-    config = "--psm 10 -c tessedit_char_whitelist=IV"
-    return pytesseract.image_to_string(preprocess(img, upscale=3), config=config).strip()
+    return promotion_badge_ocr.read_promotion_badge(img)
 
 
 def _is_maxed(hwnd, layout) -> bool:
@@ -48,7 +59,7 @@ def _is_maxed(hwnd, layout) -> bool:
     # text (e.g. "L PROMOTED ;" in testing) - check by substring rather than
     # an exact match.
     box = require_field(layout.promote_button_box, "promote_button_box")
-    text = read_text(screenshot_region(hwnd, box))
+    text = paddle_ocr.read_text(screenshot_region(hwnd, box))
     maxed = "PROMOTED" in text.upper()
     log.debug("Promote button OCR: %r -> maxed=%s", text, maxed)
     return maxed

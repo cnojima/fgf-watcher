@@ -356,8 +356,16 @@ _CHAMPION_LAYOUT_PROFILES: dict[ProfileKey, ChampionLayout] = {
         # actually opened programmatically before, only reached by manually
         # navigating there, so this structural claim was never actually
         # tested until now).
-        weapon_name_box=(795, 145, 1430, 225),
-        weapon_element_type_box=(800, 275, 1460, 360),
+        # weapon_name_box/weapon_element_type_box corrected this session -
+        # both had drifted ~75-80px higher than these original values on the
+        # same weapon page (Zora Domini's "Endless Whisper" again), confirmed
+        # by re-zooming a fresh live capture; weapon_level_box below was
+        # unaffected. Likely a game UI update moved the title/badge row up
+        # without touching the Level/stats section beneath it, rather than a
+        # miscalibration - re-verify the rest of this profile if other
+        # fields start reading empty/wrong.
+        weapon_name_box=(790, 60, 1690, 120),
+        weapon_element_type_box=(740, 130, 1490, 180),
         weapon_level_box=(1030, 755, 1140, 830),
         # Box covers the visible ~4 rows (POWER + 3 Formation bonuses); the
         # full list is 9 rows per champion_weapon.py's docstring, hence the

@@ -5,10 +5,8 @@ overview_details.py).
 import logging
 import re
 
-import pytesseract
-
+import paddle_ocr
 from capture import screenshot_region
-from ocr import preprocess
 from profiles.ui_layout import require_field
 
 log = logging.getLogger(__name__)
@@ -22,8 +20,7 @@ def read_empowerment(hwnd, layout) -> int | None:
     than guessing."""
     box = require_field(layout.empowerment_box, "empowerment_box")
     img = screenshot_region(hwnd, box)
-    config = "--psm 7 -c tessedit_char_whitelist=0123456789"
-    text = pytesseract.image_to_string(preprocess(img, upscale=3), config=config).strip()
+    text = paddle_ocr.read_text(img)
 
     m = _VALUE_RE.search(text)
     if not m:

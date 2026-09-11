@@ -1,0 +1,48 @@
+# Fine-tune PaddleOCR's lightweight English recognition model on the ship
+# Promote tab's current-level badge icon (see generate_promotion_badge_data.py
+# for why this is augmented-from-real-captures rather than font-rendered like
+# orange_kid_rec.yaml - there's no source asset for this icon, one real
+# capture per class instead).
+#
+# Run from the ocr_training/ directory with the .venv-paddle interpreter -
+# see orange_kid_rec.yaml's header for why a dedicated venv/train.py driver
+# is needed instead of the CLI.
+Global:
+  model: en_PP-OCRv4_mobile_rec
+  mode: train # check_dataset/train/evaluate/predict
+  dataset_dir: "promotion_badge_dataset"
+  device: gpu:0
+  output: "promotion_badge_output"
+
+CheckDataset:
+  convert:
+    enable: False
+    src_dataset_type: null
+  split:
+    enable: False
+    train_percent: null
+    val_percent: null
+
+Train:
+  epochs_iters: 30
+  batch_size: 128
+  learning_rate: 0.001
+  pretrain_weight_path: https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/en_PP-OCRv4_mobile_rec_pretrained.pdparams
+  resume_path: null
+  log_interval: 20
+  eval_interval: 1
+  save_interval: 1
+
+Evaluate:
+  weight_path: "promotion_badge_output/best_accuracy/best_accuracy.pdparams"
+  log_interval: 1
+
+Export:
+  weight_path: "promotion_badge_output/best_accuracy/best_accuracy.pdparams"
+
+Predict:
+  batch_size: 1
+  model_dir: "promotion_badge_output/best_accuracy/inference"
+  input: "promotion_badge_dataset/val/images/000000.jpg"
+  kernel_option:
+    run_mode: paddle

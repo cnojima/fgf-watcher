@@ -8,18 +8,25 @@ Usage:
 import csv
 import json
 import logging
+import re
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+import paddle_ocr
 from capture import find_window, screenshot_region
 from display_profiles import ProfileKey, select_profile
 from logging_setup import configure_logging
-from ocr import read_text
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 log = logging.getLogger(__name__)
+
+# paddle_ocr has no per-call character whitelist (unlike Tesseract's old
+# tessedit_char_whitelist) - a digits_only region now gets this regex
+# post-filter instead, the same pattern empowerment_details.py and
+# promotion_details.py already use on top of their own OCR reads.
+_DIGITS_RE = re.compile(r"[\d,./%]+")
 
 
 def load_config(path: str) -> dict:
@@ -59,7 +66,11 @@ def poll_loop(config_path: str, interval_seconds: float = 2.0) -> None:
                     box = tuple(spec["box"])
                     digits_only = spec.get("digits_only", False)
                     image = screenshot_region(hwnd, box)
-                    value = read_text(image, digits_only=digits_only)
+                    text = paddle_ocr.read_text(image)
+                    if digits_only:
+                        m = _DIGITS_RE.search(text)
+                        text = m.group() if m else ""
+                    value = text
                     log.debug("Polled %s: %r", name, value)
 
                     if value != state[name]:

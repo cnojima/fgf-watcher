@@ -12,9 +12,10 @@ import re
 import time
 from pathlib import Path
 
+import paddle_ocr
+import paddle_ocr_blocks
 from capture import screenshot_region, screenshot_window
 from input_control import click
-from ocr import preprocess, pytesseract, read_text
 from profiles.ui_layout import get_layout, require_field
 
 DEBUG_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -41,7 +42,7 @@ def _clean_leading_noise(line: str) -> str:
 
 def _read_multiline(hwnd, box: tuple[int, int, int, int]) -> str:
     img = screenshot_region(hwnd, box)
-    return pytesseract.image_to_string(preprocess(img, upscale=2), config="--psm 6").strip()
+    return paddle_ocr_blocks.read_text_block(img)
 
 
 def _read_stats(hwnd, layout) -> dict[str, str]:
@@ -74,9 +75,9 @@ def read_component(hwnd, layout) -> dict:
     rarity_box = require_field(layout.component_rarity_box, "component_rarity_box")
     level_box = require_field(layout.component_level_box, "component_level_box")
     set_bonus_box = require_field(layout.component_set_bonus_box, "component_set_bonus_box")
-    name = _normalize_name(read_text(screenshot_region(hwnd, name_box), upscale=3))
-    rarity = read_text(screenshot_region(hwnd, rarity_box), upscale=3).rstrip(" _")
-    level = read_text(screenshot_region(hwnd, level_box), upscale=3)
+    name = _normalize_name(paddle_ocr.read_text(screenshot_region(hwnd, name_box)))
+    rarity = paddle_ocr.read_text(screenshot_region(hwnd, rarity_box)).rstrip(" _")
+    level = paddle_ocr.read_text(screenshot_region(hwnd, level_box))
     log.debug("Component: name=%r rarity=%r level=%r", name, rarity, level)
     return {
         "name": name,

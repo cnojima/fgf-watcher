@@ -45,10 +45,13 @@ def configure_logging(level: int = logging.DEBUG) -> None:
     root.addHandler(console)
     root.addHandler(file_handler)
 
-    # These libraries log their own internals at DEBUG (e.g. pytesseract logs
-    # the full tesseract subprocess argv on every single OCR call - confirmed
-    # live, it drowns out this app's own DEBUG lines) - cap them at WARNING
-    # regardless of the app's chosen level, so "DEBUG everywhere" means this
-    # app's DEBUG output, not every dependency's.
-    for noisy in ("pytesseract", "PIL"):
+    # PIL logs its own internals at DEBUG (e.g. every PNG chunk parsed) -
+    # confirmed live, it drowns out this app's own DEBUG lines - cap it at
+    # WARNING regardless of the app's chosen level, so "DEBUG everywhere"
+    # means this app's DEBUG output, not every dependency's. PaddleOCR/
+    # PaddleX's own startup chatter (model-loading messages, glog warnings)
+    # mostly bypasses Python's logging module entirely (raw prints / a C++
+    # glog backend) - not suppressible this way, would need env vars
+    # (GLOG_minloglevel etc.) instead; not done here since it's cosmetic.
+    for noisy in ("PIL",):
         logging.getLogger(noisy).setLevel(logging.WARNING)

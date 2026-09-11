@@ -11,9 +11,9 @@ import logging
 import re
 import time
 
+import paddle_ocr_blocks
 from capture import screenshot_region
 from input_control import click
-from ocr import preprocess, pytesseract
 from profiles.champion_layout import ChampionLayout
 
 log = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ _ROW_LINE = re.compile(r"^(.+?)\s+([+\-]?[\d][\d,\.]*%?)$")
 
 def _read_flat_list(hwnd, layout: ChampionLayout) -> dict[str, str]:
     img = screenshot_region(hwnd, layout.attribute_modal_box)
-    text = pytesseract.image_to_string(preprocess(img, upscale=2), config="--psm 6").strip()
+    text = paddle_ocr_blocks.read_text_block(img)
     rows = {}
     for line in text.splitlines():
         m = _ROW_LINE.match(line.strip())

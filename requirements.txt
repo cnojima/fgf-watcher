@@ -1,8 +1,16 @@
 mss
 pillow
-pytesseract
 pydirectinput; sys_platform == "win32"
-easyocr
+paddlepaddle  # NOT pulled in by paddleocr itself (checked via `pip show
+              # paddleocr`/`paddlex` - neither lists it) - both must be
+              # installed explicitly. CPU build; no GPU needed at inference
+              # time for anything using it so far.
+paddleocr  # All OCR in this project now - src/paddle_ocr.py (single-line
+           # text), src/paddle_ocr_blocks.py (multi-line blocks, e.g. stat
+           # tables), src/orange_kid_ocr.py and src/promotion_badge_ocr.py
+           # (two small fine-tuned models for game icons the stock
+           # recognizer misread). Tesseract (pytesseract) and EasyOCR
+           # (torch) were both dropped this session - see CLAUDE.md.
 pywin32; sys_platform == "win32"
 pyobjc-framework-Quartz; sys_platform == "darwin"
 pyobjc-framework-Cocoa; sys_platform == "darwin"

@@ -181,9 +181,15 @@ etc.), get a real reference screenshot of that other state first.
   foreground window. `mss` grabs a screen *region*, not the window's content directly, so
   an occluded/alt-tabbed-away window would otherwise silently return whatever's covering
   it instead of raising an error.
-- `ocr.py`'s `preprocess()` does **not** binarize/threshold by default. It looks cleaner to
-  a human eye but destroys anti-aliased UI text for OCR. Only pass `threshold=` after
-  confirming it measurably helps a specific noisy-background region.
+- `ocr.py` (Tesseract) was removed entirely this session, replaced by PaddleOCR
+  (`paddle_ocr.py`/`paddle_ocr_blocks.py`, plus two fine-tuned models - `orange_kid_ocr.py`,
+  `promotion_badge_ocr.py` - for the two custom game icons stock PaddleOCR misread outright,
+  not just imperfectly). The underlying lesson survives the swap even though the file
+  didn't: `ocr.py`'s `preprocess()` never binarized/thresholded by default, since a hard
+  cutoff looks cleaner to a human eye but destroys anti-aliased UI text for OCR - neither
+  PaddleOCR module thresholds at all, so this is no longer a knob to worry about
+  regressing, but keep the reasoning in mind if a genuinely noisy-background region ever
+  needs revisiting.
 - `nav.py` never uses ESC for closing overlays or resetting state, even though it looks
   like the obvious "back" key. It's "Quit game" from a base view, and per a known game bug
   can also trigger a full quit from certain overlays instead of closing just that overlay.

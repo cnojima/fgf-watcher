@@ -10,6 +10,7 @@ import logging
 import time
 from pathlib import Path
 
+import paddle_ocr
 from capture import find_window, screenshot_region
 from champion_ability import read_abilities
 from champion_attributes import read_attributes
@@ -20,7 +21,6 @@ from champions import close_card, enumerate_grid, goto_champion_grid, open_card
 from input_control import click, focus_window
 from logging_setup import configure_logging
 from nav import back
-from ocr import read_text
 from profiles.champion_layout import ChampionLayout, get_champion_layout
 from profiles.fingerprints import current_screen
 
@@ -49,7 +49,7 @@ _GRID_TITLE_BOX = (1150, 10, 1400, 75)
 
 
 def _on_grid(hwnd) -> bool:
-    return "champion" in read_text(screenshot_region(hwnd, _GRID_TITLE_BOX), upscale=3).lower()
+    return "champion" in paddle_ocr.read_text(screenshot_region(hwnd, _GRID_TITLE_BOX)).lower()
 
 
 def _recover_to_grid(hwnd, layout: ChampionLayout) -> None:
@@ -86,7 +86,7 @@ def collect_champion(hwnd, layout) -> dict:
         # back on this champion's own Info tab (not stuck on the weapon
         # page or dumped somewhere else entirely) before touching the
         # Ability tab, rather than assuming the close worked.
-        back_name = read_text(screenshot_region(hwnd, layout.name_box), upscale=3)
+        back_name = paddle_ocr.read_text(screenshot_region(hwnd, layout.name_box))
         if back_name != info["name"]:
             log.error(
                 "%s: expected to be back on Info tab after reading weapon, but name_box "

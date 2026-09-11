@@ -28,10 +28,10 @@ untested code, consistent with CLAUDE.md's evidence-first approach.
 import logging
 import time
 
+import paddle_ocr
 from capture import screenshot_region
 from input_control import click
 from nav import back
-from ocr import preprocess, pytesseract
 from profiles.champion_layout import ChampionLayout, get_champion_layout, require_field
 
 log = logging.getLogger(__name__)
@@ -52,23 +52,24 @@ def _card_state(hwnd, layout: ChampionLayout, col: int, row: int) -> str:
     champion to open" - a false negative here just skips one card, which is
     far cheaper than mis-clicking a non-champion slot.
 
-    OCR on this small mixed digits+star-pips region was confirmed flaky at
-    a fixed upscale - a crop showing plainly readable "110" text came back
-    completely empty at upscale 3 despite the box itself being correctly
-    positioned (confirmed by saving and inspecting the crop directly, not
-    guessed). Retrying at a couple of different upscale factors recovers
-    real content without needing a single "right" preprocessing setting."""
+    OCR on this small mixed digits+star-pips region was confirmed flaky
+    under Tesseract at a fixed upscale - a crop showing plainly readable
+    "110" text came back completely empty at upscale 3 despite the box
+    itself being correctly positioned (confirmed by saving and inspecting
+    the crop directly, not guessed) - retrying at a couple of different
+    upscale factors recovered real content. Migrated to paddle_ocr (see the
+    OCR-consolidation plan): confirmed live against real card crops (three
+    unlocked cards, "121"/"120"/"120" mixed with star-pip and quality-badge
+    icons) reading cleanly on the first call, so the multi-upscale retry
+    loop is no longer needed."""
     cx, cy = layout.grid_columns[col], layout.grid_rows[row]
     l, t, r, b = require_field(layout.card_status_offset, "card_status_offset")
     box = (cx + l, cy + t, cx + r, cy + b)
     img = screenshot_region(hwnd, box)
-    for upscale in (3, 6, 8):
-        text = pytesseract.image_to_string(
-            preprocess(img, upscale=upscale), config="--psm 7 -c tessedit_char_whitelist=0123456789/"
-        ).strip()
-        if text:
-            return "locked" if "/" in text else "unlocked"
-    return "empty"
+    text = paddle_ocr.read_text(img)
+    if not text:
+        return "empty"
+    return "locked" if "/" in text else "unlocked"
 
 
 def enumerate_grid(hwnd, layout: ChampionLayout) -> list[tuple[int, int]]:

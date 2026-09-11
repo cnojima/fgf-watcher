@@ -133,15 +133,18 @@ _LAYOUT_PROFILES: dict[ProfileKey, UILayout] = {
         # crop against a reference icon side by side, not just a bad match
         # score alone (see CLAUDE.md: never trust a coordinate without zoom).
         element_icon_box=(730, 152, 790, 207),
-        # Confirmed via calibrate.py zoom against a live Gram Overview tab:
-        # the "+N" empowerment value, directly below the element badge. Box
-        # deliberately excludes the leading "+" glyph itself, not just the
-        # icon - confirmed live that including it made Tesseract misread it
-        # as a stray "4" digit (e.g. "+12" -> "412") even under a digit-only
-        # whitelist; cropping it out entirely was the only fix that worked,
-        # not a whitelist/psm change (see CLAUDE.md: capture evidence first).
-        # Width allows for the full 0-21 range (1-2 digits).
-        empowerment_box=(710, 247, 740, 278),        
+        # Re-corrected this session - the previous box (710, 247, 740, 278)
+        # had drifted onto blank background/the diamond icon itself (same
+        # kind of drift found and fixed in champion_layout.py's
+        # weapon_name_box this session, likely a game UI update, not a
+        # miscalibration), confirmed by re-zooming a fresh live capture of
+        # this exact "Gram" ship's Overview tab. The old box deliberately
+        # excluded the leading "+" glyph to stop Tesseract misreading "+12"
+        # as "412" - no longer necessary now this reads via paddle_ocr
+        # (which reads "+3" cleanly) followed by empowerment_details.py's
+        # own regex digit extraction, so this box just includes the "+N"
+        # value whole. Width allows for the full 0-21 range (1-2 digits).
+        empowerment_box=(790, 255, 840, 295),
     ),
     ("darwin", (1280, 828)): UILayout(
         # Recalibrated live via calibrate.py zoom against fresh screenshots

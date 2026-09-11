@@ -1,0 +1,672 @@
+INFO: Could not find files for the given pattern(s).
+C:\Users\cnoji\dev\fgf-watcher\ocr_training\.venv-paddle\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+[32m['C:\\Users\\cnoji\\dev\\fgf-watcher\\ocr_training\\.venv-paddle\\Scripts\\python.exe', 'tools/train.py', '-c', 'C:\\Users\\cnoji\\.paddlex\\tmp3hssrs6v\\textrecmodel_en_PP-OCRv4_mobile_rec.yml'][0m
+[32m
+Log path: C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\train.log 
+[0m
+INFO: Could not find files for the given pattern(s).
+C:\Users\cnoji\dev\fgf-watcher\ocr_training\.venv-paddle\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+Skipping import of the encryption module.
+[2026/09/10 21:06:55] ppocr WARNING: You are using VisualDL, the VisualDL is deprecated and removed in ppocr!
+[2026/09/10 21:06:55] ppocr INFO: Architecture : 
+[2026/09/10 21:06:55] ppocr INFO:     Backbone : 
+[2026/09/10 21:06:55] ppocr INFO:         name : PPLCNetV3
+[2026/09/10 21:06:55] ppocr INFO:         scale : 0.95
+[2026/09/10 21:06:55] ppocr INFO:     Head : 
+[2026/09/10 21:06:55] ppocr INFO:         head_list : 
+[2026/09/10 21:06:55] ppocr INFO:             CTCHead : 
+[2026/09/10 21:06:55] ppocr INFO:                 Head : 
+[2026/09/10 21:06:55] ppocr INFO:                     fc_decay : 1e-05
+[2026/09/10 21:06:55] ppocr INFO:                 Neck : 
+[2026/09/10 21:06:55] ppocr INFO:                     depth : 2
+[2026/09/10 21:06:55] ppocr INFO:                     dims : 120
+[2026/09/10 21:06:55] ppocr INFO:                     hidden_dims : 120
+[2026/09/10 21:06:55] ppocr INFO:                     kernel_size : [1, 3]
+[2026/09/10 21:06:55] ppocr INFO:                     name : svtr
+[2026/09/10 21:06:55] ppocr INFO:                     use_guide : True
+[2026/09/10 21:06:55] ppocr INFO:             NRTRHead : 
+[2026/09/10 21:06:55] ppocr INFO:                 max_text_length : 25
+[2026/09/10 21:06:55] ppocr INFO:                 nrtr_dim : 384
+[2026/09/10 21:06:55] ppocr INFO:         name : MultiHead
+[2026/09/10 21:06:55] ppocr INFO:     Transform : None
+[2026/09/10 21:06:55] ppocr INFO:     algorithm : SVTR_LCNet
+[2026/09/10 21:06:55] ppocr INFO:     model_type : rec
+[2026/09/10 21:06:55] ppocr INFO: Eval : 
+[2026/09/10 21:06:55] ppocr INFO:     dataset : 
+[2026/09/10 21:06:55] ppocr INFO:         data_dir : C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_dataset
+[2026/09/10 21:06:55] ppocr INFO:         label_file_list : ['C:\\Users\\cnoji\\dev\\fgf-watcher\\ocr_training\\promotion_badge_dataset\\val.txt']
+[2026/09/10 21:06:55] ppocr INFO:         name : TextRecDataset
+[2026/09/10 21:06:55] ppocr INFO:         transforms : 
+[2026/09/10 21:06:55] ppocr INFO:             DecodeImage : 
+[2026/09/10 21:06:55] ppocr INFO:                 channel_first : False
+[2026/09/10 21:06:55] ppocr INFO:                 img_mode : BGR
+[2026/09/10 21:06:55] ppocr INFO:             MultiLabelEncode : 
+[2026/09/10 21:06:55] ppocr INFO:                 gtc_encode : NRTRLabelEncode
+[2026/09/10 21:06:55] ppocr INFO:             RecResizeImg : 
+[2026/09/10 21:06:55] ppocr INFO:                 image_shape : [3, 48, 320]
+[2026/09/10 21:06:55] ppocr INFO:             KeepKeys : 
+[2026/09/10 21:06:55] ppocr INFO:                 keep_keys : ['image', 'label_ctc', 'label_gtc', 'length', 'valid_ratio']
+[2026/09/10 21:06:55] ppocr INFO:     loader : 
+[2026/09/10 21:06:55] ppocr INFO:         batch_size_per_card : 128
+[2026/09/10 21:06:55] ppocr INFO:         drop_last : False
+[2026/09/10 21:06:55] ppocr INFO:         num_workers : 4
+[2026/09/10 21:06:55] ppocr INFO:         shuffle : False
+[2026/09/10 21:06:55] ppocr INFO: Global : 
+[2026/09/10 21:06:55] ppocr INFO:     amp_level : OFF
+[2026/09/10 21:06:55] ppocr INFO:     cal_metric_during_train : True
+[2026/09/10 21:06:55] ppocr INFO:     character_dict_path : C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_dataset\dict.txt
+[2026/09/10 21:06:55] ppocr INFO:     checkpoints : 
+[2026/09/10 21:06:55] ppocr INFO:     debug : False
+[2026/09/10 21:06:55] ppocr INFO:     distributed : False
+[2026/09/10 21:06:55] ppocr INFO:     epoch_num : 30
+[2026/09/10 21:06:55] ppocr INFO:     eval_batch_epoch : 1
+[2026/09/10 21:06:55] ppocr INFO:     eval_batch_step : [0, 2000]
+[2026/09/10 21:06:55] ppocr INFO:     export_with_pir : True
+[2026/09/10 21:06:55] ppocr INFO:     infer_img : doc/imgs_words/ch/word_1.jpg
+[2026/09/10 21:06:55] ppocr INFO:     infer_mode : False
+[2026/09/10 21:06:55] ppocr INFO:     log_smooth_window : 20
+[2026/09/10 21:06:55] ppocr INFO:     max_text_length : 25
+[2026/09/10 21:06:55] ppocr INFO:     model_name : en_PP-OCRv4_mobile_rec
+[2026/09/10 21:06:55] ppocr INFO:     pretrained_model : https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/en_PP-OCRv4_mobile_rec_pretrained.pdparams
+[2026/09/10 21:06:55] ppocr INFO:     print_batch_step : 20
+[2026/09/10 21:06:55] ppocr INFO:     save_epoch_step : 1
+[2026/09/10 21:06:55] ppocr INFO:     save_inference_dir : None
+[2026/09/10 21:06:55] ppocr INFO:     save_model_dir : C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output
+[2026/09/10 21:06:55] ppocr INFO:     save_res_path : ./output/rec/predicts_ppocrv3.txt
+[2026/09/10 21:06:55] ppocr INFO:     to_static : False
+[2026/09/10 21:06:55] ppocr INFO:     uniform_output_enabled : True
+[2026/09/10 21:06:55] ppocr INFO:     use_amp : False
+[2026/09/10 21:06:55] ppocr INFO:     use_gcu : False
+[2026/09/10 21:06:55] ppocr INFO:     use_gpu : True
+[2026/09/10 21:06:55] ppocr INFO:     use_iluvatar_gpu : False
+[2026/09/10 21:06:55] ppocr INFO:     use_metax_gpu : False
+[2026/09/10 21:06:55] ppocr INFO:     use_mlu : False
+[2026/09/10 21:06:55] ppocr INFO:     use_npu : False
+[2026/09/10 21:06:55] ppocr INFO:     use_space_char : True
+[2026/09/10 21:06:55] ppocr INFO:     use_visualdl : True
+[2026/09/10 21:06:55] ppocr INFO:     use_xpu : False
+[2026/09/10 21:06:55] ppocr INFO: Loss : 
+[2026/09/10 21:06:55] ppocr INFO:     loss_config_list : 
+[2026/09/10 21:06:55] ppocr INFO:         CTCLoss : None
+[2026/09/10 21:06:55] ppocr INFO:         NRTRLoss : None
+[2026/09/10 21:06:55] ppocr INFO:     name : MultiLoss
+[2026/09/10 21:06:55] ppocr INFO: Metric : 
+[2026/09/10 21:06:55] ppocr INFO:     ignore_space : False
+[2026/09/10 21:06:55] ppocr INFO:     main_indicator : acc
+[2026/09/10 21:06:55] ppocr INFO:     name : RecMetric
+[2026/09/10 21:06:55] ppocr INFO: Optimizer : 
+[2026/09/10 21:06:55] ppocr INFO:     beta1 : 0.9
+[2026/09/10 21:06:55] ppocr INFO:     beta2 : 0.999
+[2026/09/10 21:06:55] ppocr INFO:     lr : 
+[2026/09/10 21:06:55] ppocr INFO:         learning_rate : 0.001
+[2026/09/10 21:06:55] ppocr INFO:         name : Cosine
+[2026/09/10 21:06:55] ppocr INFO:         warmup_epoch : 5
+[2026/09/10 21:06:55] ppocr INFO:     name : Adam
+[2026/09/10 21:06:55] ppocr INFO:     regularizer : 
+[2026/09/10 21:06:55] ppocr INFO:         factor : 3e-05
+[2026/09/10 21:06:55] ppocr INFO:         name : L2
+[2026/09/10 21:06:55] ppocr INFO: PostProcess : 
+[2026/09/10 21:06:55] ppocr INFO:     name : CTCLabelDecode
+[2026/09/10 21:06:55] ppocr INFO: Train : 
+[2026/09/10 21:06:55] ppocr INFO:     dataset : 
+[2026/09/10 21:06:55] ppocr INFO:         data_dir : C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_dataset
+[2026/09/10 21:06:55] ppocr INFO:         ds_width : False
+[2026/09/10 21:06:55] ppocr INFO:         ext_op_transform_idx : 1
+[2026/09/10 21:06:55] ppocr INFO:         label_file_list : ['C:\\Users\\cnoji\\dev\\fgf-watcher\\ocr_training\\promotion_badge_dataset\\train.txt']
+[2026/09/10 21:06:55] ppocr INFO:         name : MSTextRecDataset
+[2026/09/10 21:06:55] ppocr INFO:         transforms : 
+[2026/09/10 21:06:55] ppocr INFO:             DecodeImage : 
+[2026/09/10 21:06:55] ppocr INFO:                 channel_first : False
+[2026/09/10 21:06:55] ppocr INFO:                 img_mode : BGR
+[2026/09/10 21:06:55] ppocr INFO:             RecConAug : 
+[2026/09/10 21:06:55] ppocr INFO:                 ext_data_num : 2
+[2026/09/10 21:06:55] ppocr INFO:                 image_shape : [48, 320, 3]
+[2026/09/10 21:06:55] ppocr INFO:                 max_text_length : 25
+[2026/09/10 21:06:55] ppocr INFO:                 prob : 0.5
+[2026/09/10 21:06:55] ppocr INFO:             RecAug : None
+[2026/09/10 21:06:55] ppocr INFO:             MultiLabelEncode : 
+[2026/09/10 21:06:55] ppocr INFO:                 gtc_encode : NRTRLabelEncode
+[2026/09/10 21:06:55] ppocr INFO:             KeepKeys : 
+[2026/09/10 21:06:55] ppocr INFO:                 keep_keys : ['image', 'label_ctc', 'label_gtc', 'length', 'valid_ratio']
+[2026/09/10 21:06:55] ppocr INFO:     loader : 
+[2026/09/10 21:06:55] ppocr INFO:         batch_size_per_card : 128
+[2026/09/10 21:06:55] ppocr INFO:         drop_last : True
+[2026/09/10 21:06:55] ppocr INFO:         num_workers : 8
+[2026/09/10 21:06:55] ppocr INFO:         shuffle : True
+[2026/09/10 21:06:55] ppocr INFO:     sampler : 
+[2026/09/10 21:06:55] ppocr INFO:         divided_factor : [8, 16]
+[2026/09/10 21:06:55] ppocr INFO:         first_bs : 128
+[2026/09/10 21:06:55] ppocr INFO:         fix_bs : False
+[2026/09/10 21:06:55] ppocr INFO:         is_training : True
+[2026/09/10 21:06:55] ppocr INFO:         name : MultiScaleSampler
+[2026/09/10 21:06:55] ppocr INFO:         scales : [[320, 32], [320, 48], [320, 64]]
+[2026/09/10 21:06:55] ppocr INFO: profiler_options : None
+[2026/09/10 21:06:55] ppocr INFO: train with paddle 3.3.1 and device Place(gpu:0)
+[2026/09/10 21:06:55] ppocr INFO: Initialize indexs of datasets:['C:\\Users\\cnoji\\dev\\fgf-watcher\\ocr_training\\promotion_badge_dataset\\train.txt']
+[2026/09/10 21:06:55] ppocr INFO: Initialize indexs of datasets:['C:\\Users\\cnoji\\dev\\fgf-watcher\\ocr_training\\promotion_badge_dataset\\val.txt']
+WARNING: Logging before InitGoogleLogging() is written to STDERR
+W0910 21:06:56.053755 37936 gpu_resources.cc:116] Please NOTE: device: 0, GPU Compute Capability: 12.0, Driver API Version: 13.3, Runtime API Version: 12.9
+[2026-09-10 21:06:56,253] [    INFO] optimizer.py:254 - If regularizer of a Parameter has been set by 'paddle.ParamAttr' or 'static.WeightNormParamAttr' already. The weight_decay[3e-05] in Optimizer will not take effect, and it will only be applied to other Parameters!
+[2026/09/10 21:06:56] ppocr INFO: train dataloader has 21 iters
+[2026/09/10 21:06:56] ppocr INFO: valid dataloader has 2 iters
+download https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/en_PP-OCRv4_mobile_rec_pretrained.pdparams to C:\Users\cnoji/.paddleocr/models\en_PP-OCRv4_mobile_rec_pretrained.pdparams
+[2026/09/10 21:06:56] ppocr INFO: Path C:\Users\cnoji/.paddleocr/models\en_PP-OCRv4_mobile_rec_pretrained.pdparams already exists. Skipping...
+[2026/09/10 21:06:56] ppocr WARNING: The shape of model params head.ctc_head.fc.weight paddle.Size([120, 4]) not matched with loaded params head.ctc_head.fc.weight paddle.Size([120, 97]) !
+[2026/09/10 21:06:56] ppocr WARNING: The shape of model params head.ctc_head.fc.bias paddle.Size([4]) not matched with loaded params head.ctc_head.fc.bias paddle.Size([97]) !
+[2026/09/10 21:06:56] ppocr WARNING: The shape of model params head.gtc_head.embedding.embedding.weight paddle.Size([8, 384]) not matched with loaded params head.gtc_head.embedding.embedding.weight paddle.Size([101, 384]) !
+[2026/09/10 21:06:56] ppocr WARNING: The shape of model params head.gtc_head.tgt_word_prj.weight paddle.Size([384, 8]) not matched with loaded params head.gtc_head.tgt_word_prj.weight paddle.Size([384, 101]) !
+[2026/09/10 21:06:56] ppocr INFO: load pretrain successful from C:\Users\cnoji/.paddleocr/models\en_PP-OCRv4_mobile_rec_pretrained
+[2026/09/10 21:06:56] ppocr INFO: During the training process, after the 0th iteration, an evaluation is run every 21 iterations
+[2026/09/10 21:07:11] ppocr INFO: epoch: [1/30], global_step: 20, lr: 0.000090, acc: 0.000000, norm_edit_dis: 0.279627, CTCLoss: 34.441664, NRTRLoss: 1.694590, loss: 36.226149, avg_reader_cost: 0.40629 s, avg_batch_cost: 0.75137 s, avg_samples: 90.55, ips: 120.51288 samples/s, eta: 0:07:38, max_mem_reserved: 15847 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:07:11] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+W0910 21:07:13.130347 37936 eager_utils.cc:3584] Paddle static graph(PIR) not support input out tensor for now!!!!!
+Skipping import of the encryption module
+[2026/09/10 21:07:15] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:07:15] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:07:15] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:07:15] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_1\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:07:18] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_1\inference\inference
+[2026/09/10 21:07:18] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_1
+[2026/09/10 21:07:18] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_1\iter_epoch_1
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  1.08it/s]eval model::  50%|#####     | 1/2 [00:01<00:01,  1.04s/it]
+[2026/09/10 21:07:20] ppocr INFO: cur metric, acc: 0.14843748840332122, norm_edit_dis: 0.6269531541442845, fps: 1072.9585642480988
+[2026/09/10 21:07:20] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:07:23] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:07:24] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:07:24] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:07:24] ppocr INFO: best metric, acc: 0.14843748840332122, is_float16: False, norm_edit_dis: 0.6269531541442845, fps: 1072.9585642480988, best_epoch: 2
+[2026/09/10 21:07:32] ppocr INFO: epoch: [2/30], global_step: 40, lr: 0.000281, acc: 0.115441, norm_edit_dis: 0.525425, CTCLoss: 18.725744, NRTRLoss: 1.142109, loss: 19.881367, avg_reader_cost: 0.16304 s, avg_batch_cost: 0.48598 s, avg_samples: 90.55, ips: 186.32364 samples/s, eta: 0:06:04, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:07:33] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:07:35] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:07:36] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:07:36] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:07:36] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_2\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:07:38] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_2\inference\inference
+[2026/09/10 21:07:39] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_2
+[2026/09/10 21:07:39] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_2\iter_epoch_2
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.15it/s]
+[2026/09/10 21:07:41] ppocr INFO: cur metric, acc: 0.6015624530029333, norm_edit_dis: 0.8372395960489898, fps: 1171.9206482257614
+[2026/09/10 21:07:41] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:07:44] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:07:45] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:07:45] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:07:45] ppocr INFO: best metric, acc: 0.6015624530029333, is_float16: False, norm_edit_dis: 0.8372395960489898, fps: 1171.9206482257614, best_epoch: 3
+[2026/09/10 21:07:53] ppocr INFO: epoch: [3/30], global_step: 60, lr: 0.000471, acc: 0.179687, norm_edit_dis: 0.432949, CTCLoss: 5.167003, NRTRLoss: 0.817460, loss: 6.003203, avg_reader_cost: 0.13326 s, avg_batch_cost: 0.46580 s, avg_samples: 93.75, ips: 201.26477 samples/s, eta: 0:05:22, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:07:53] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:07:55] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:07:56] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:07:56] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:07:56] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_3\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:07:58] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_3\inference\inference
+[2026/09/10 21:07:58] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_3
+[2026/09/10 21:07:58] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_3\iter_epoch_3
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]
+[2026/09/10 21:08:01] ppocr INFO: cur metric, acc: 0.4687499633789091, norm_edit_dis: 0.695312523803709, fps: 1269.6996497435157
+[2026/09/10 21:08:01] ppocr INFO: best metric, acc: 0.6015624530029333, is_float16: False, norm_edit_dis: 0.8372395960489898, fps: 1171.9206482257614, best_epoch: 3
+[2026/09/10 21:08:09] ppocr INFO: epoch: [4/30], global_step: 80, lr: 0.000662, acc: 0.200000, norm_edit_dis: 0.453035, CTCLoss: 3.520543, NRTRLoss: 0.724181, loss: 4.250892, avg_reader_cost: 0.18208 s, avg_batch_cost: 0.51687 s, avg_samples: 90.55, ips: 175.19009 samples/s, eta: 0:05:03, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:08:10] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:08:12] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:08:12] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:08:12] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:08:13] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_4\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:08:15] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_4\inference\inference
+[2026/09/10 21:08:15] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_4
+[2026/09/10 21:08:15] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_4\iter_epoch_4
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.17it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.17it/s]
+[2026/09/10 21:08:19] ppocr INFO: cur metric, acc: 0.01562499877929697, norm_edit_dis: 0.2656250573730434, fps: 1221.5576261043875
+[2026/09/10 21:08:19] ppocr INFO: best metric, acc: 0.6015624530029333, is_float16: False, norm_edit_dis: 0.8372395960489898, fps: 1171.9206482257614, best_epoch: 3
+[2026/09/10 21:08:26] ppocr INFO: epoch: [5/30], global_step: 100, lr: 0.000852, acc: 0.238281, norm_edit_dis: 0.503573, CTCLoss: 2.732369, NRTRLoss: 0.617584, loss: 3.318799, avg_reader_cost: 0.20670 s, avg_batch_cost: 0.52879 s, avg_samples: 93.75, ips: 177.29107 samples/s, eta: 0:04:49, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:08:26] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:08:29] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:08:29] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:08:29] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:08:29] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_5\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:08:32] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_5\inference\inference
+[2026/09/10 21:08:32] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_5
+[2026/09/10 21:08:32] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_5\iter_epoch_5
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.04it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.04it/s]
+[2026/09/10 21:08:35] ppocr INFO: cur metric, acc: 0.2031249841308606, norm_edit_dis: 0.618489613138832, fps: 1194.527685441058
+[2026/09/10 21:08:35] ppocr INFO: best metric, acc: 0.6015624530029333, is_float16: False, norm_edit_dis: 0.8372395960489898, fps: 1171.9206482257614, best_epoch: 3
+[2026/09/10 21:08:43] ppocr INFO: epoch: [6/30], global_step: 120, lr: 0.000999, acc: 0.305882, norm_edit_dis: 0.588421, CTCLoss: 2.279464, NRTRLoss: 0.620461, loss: 2.926228, avg_reader_cost: 0.18172 s, avg_batch_cost: 0.51019 s, avg_samples: 93.75, ips: 183.75458 samples/s, eta: 0:04:34, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:08:43] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:08:45] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:08:46] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:08:46] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:08:46] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_6\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:08:48] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_6\inference\inference
+[2026/09/10 21:08:49] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_6
+[2026/09/10 21:08:49] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_6\iter_epoch_6
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.12it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.12it/s]
+[2026/09/10 21:08:52] ppocr INFO: cur metric, acc: 0.24999998046875152, norm_edit_dis: 0.649739610697426, fps: 1239.777830121144
+[2026/09/10 21:08:52] ppocr INFO: best metric, acc: 0.6015624530029333, is_float16: False, norm_edit_dis: 0.8372395960489898, fps: 1171.9206482257614, best_epoch: 3
+[2026/09/10 21:09:00] ppocr INFO: epoch: [7/30], global_step: 140, lr: 0.000996, acc: 0.441406, norm_edit_dis: 0.717760, CTCLoss: 1.858915, NRTRLoss: 0.565716, loss: 2.424902, avg_reader_cost: 0.19112 s, avg_batch_cost: 0.52929 s, avg_samples: 93.75, ips: 177.12326 samples/s, eta: 0:04:21, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:09:00] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:09:02] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:09:03] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:09:03] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:09:03] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_7\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:09:05] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_7\inference\inference
+[2026/09/10 21:09:06] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_7
+[2026/09/10 21:09:06] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_7\iter_epoch_7
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.11it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.11it/s]
+[2026/09/10 21:09:10] ppocr INFO: cur metric, acc: 0.4687499633789091, norm_edit_dis: 0.6679687759399393, fps: 1283.9654943977423
+[2026/09/10 21:09:10] ppocr INFO: best metric, acc: 0.6015624530029333, is_float16: False, norm_edit_dis: 0.8372395960489898, fps: 1171.9206482257614, best_epoch: 3
+[2026/09/10 21:09:17] ppocr INFO: epoch: [8/30], global_step: 160, lr: 0.000988, acc: 0.538143, norm_edit_dis: 0.813571, CTCLoss: 1.366120, NRTRLoss: 0.559682, loss: 1.997828, avg_reader_cost: 0.20001 s, avg_batch_cost: 0.53251 s, avg_samples: 92.7, ips: 174.08059 samples/s, eta: 0:04:10, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:09:17] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:09:19] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:09:20] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:09:20] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:09:20] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_8\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:09:22] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_8\inference\inference
+[2026/09/10 21:09:23] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_8
+[2026/09/10 21:09:23] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_8\iter_epoch_8
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.05it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.05it/s]
+[2026/09/10 21:09:28] ppocr INFO: cur metric, acc: 0.8124999365234424, norm_edit_dis: 0.9375000048828122, fps: 1320.9008692485786
+[2026/09/10 21:09:28] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:09:31] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:09:32] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:09:32] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:09:32] ppocr INFO: best metric, acc: 0.8124999365234424, is_float16: False, norm_edit_dis: 0.9375000048828122, fps: 1320.9008692485786, best_epoch: 9
+[2026/09/10 21:09:37] ppocr INFO: epoch: [9/30], global_step: 180, lr: 0.000974, acc: 0.562500, norm_edit_dis: 0.838728, CTCLoss: 1.336155, NRTRLoss: 0.549768, loss: 1.900035, avg_reader_cost: 0.11321 s, avg_batch_cost: 0.44360 s, avg_samples: 92.7, ips: 208.97151 samples/s, eta: 0:03:53, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:09:37] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:09:40] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:09:40] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:09:40] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:09:40] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_9\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:09:43] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_9\inference\inference
+[2026/09/10 21:09:43] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_9
+[2026/09/10 21:09:43] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_9\iter_epoch_9
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.12it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.12it/s]
+[2026/09/10 21:09:49] ppocr INFO: cur metric, acc: 0.9296874273681697, norm_edit_dis: 0.967447919209798, fps: 1271.994958182292
+[2026/09/10 21:09:49] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:09:52] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:09:53] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:09:53] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:09:53] ppocr INFO: best metric, acc: 0.9296874273681697, is_float16: False, norm_edit_dis: 0.967447919209798, fps: 1271.994958182292, best_epoch: 10
+[2026/09/10 21:09:57] ppocr INFO: epoch: [10/30], global_step: 200, lr: 0.000956, acc: 0.620358, norm_edit_dis: 0.880292, CTCLoss: 1.059176, NRTRLoss: 0.541666, loss: 1.611030, avg_reader_cost: 0.13969 s, avg_batch_cost: 0.46659 s, avg_samples: 93.75, ips: 200.92722 samples/s, eta: 0:03:40, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:09:58] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:10:00] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:10:01] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:10:01] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:10:01] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_10\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:10:03] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_10\inference\inference
+[2026/09/10 21:10:03] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_10
+[2026/09/10 21:10:03] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_10\iter_epoch_10
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]
+[2026/09/10 21:10:09] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1261.364791237398
+[2026/09/10 21:10:10] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:10:13] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:10:14] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:10:14] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:10:14] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1261.364791237398, best_epoch: 11
+[2026/09/10 21:10:18] ppocr INFO: epoch: [11/30], global_step: 220, lr: 0.000934, acc: 0.677114, norm_edit_dis: 0.908006, CTCLoss: 0.871723, NRTRLoss: 0.548984, loss: 1.434986, avg_reader_cost: 0.11010 s, avg_batch_cost: 0.44913 s, avg_samples: 90.55, ips: 201.61305 samples/s, eta: 0:03:26, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:10:18] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:10:20] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:10:21] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:10:21] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:10:21] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_11\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:10:23] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_11\inference\inference
+[2026/09/10 21:10:24] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_11
+[2026/09/10 21:10:24] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_11\iter_epoch_11
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.18it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.18it/s]
+[2026/09/10 21:10:30] ppocr INFO: cur metric, acc: 0.9609374249267637, norm_edit_dis: 0.9804687515258788, fps: 1318.872797665255
+[2026/09/10 21:10:30] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1261.364791237398, best_epoch: 11
+[2026/09/10 21:10:35] ppocr INFO: epoch: [12/30], global_step: 240, lr: 0.000907, acc: 0.746094, norm_edit_dis: 0.935817, CTCLoss: 0.685423, NRTRLoss: 0.534363, loss: 1.215236, avg_reader_cost: 0.21866 s, avg_batch_cost: 0.54378 s, avg_samples: 92.7, ips: 170.47440 samples/s, eta: 0:03:16, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:10:35] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:10:38] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:10:38] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:10:38] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:10:38] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_12\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:10:41] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_12\inference\inference
+[2026/09/10 21:10:41] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_12
+[2026/09/10 21:10:41] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_12\iter_epoch_12
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.33it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.32it/s]
+[2026/09/10 21:10:49] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1299.8351499891048
+[2026/09/10 21:10:49] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:10:52] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:10:53] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:10:53] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:10:53] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1299.8351499891048, best_epoch: 13
+[2026/09/10 21:10:56] ppocr INFO: epoch: [13/30], global_step: 260, lr: 0.000876, acc: 0.751471, norm_edit_dis: 0.941355, CTCLoss: 0.626895, NRTRLoss: 0.531995, loss: 1.166990, avg_reader_cost: 0.14304 s, avg_batch_cost: 0.47263 s, avg_samples: 92.7, ips: 196.13684 samples/s, eta: 0:03:04, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:10:56] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:10:58] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:10:59] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:10:59] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:10:59] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_13\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:11:01] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_13\inference\inference
+[2026/09/10 21:11:02] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_13
+[2026/09/10 21:11:02] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_13\iter_epoch_13
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.13it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.13it/s]
+[2026/09/10 21:11:10] ppocr INFO: cur metric, acc: 0.9374999267578182, norm_edit_dis: 0.9718750021972654, fps: 1248.1596540580754
+[2026/09/10 21:11:10] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1299.8351499891048, best_epoch: 13
+[2026/09/10 21:11:13] ppocr INFO: epoch: [14/30], global_step: 280, lr: 0.000841, acc: 0.817647, norm_edit_dis: 0.957952, CTCLoss: 0.487775, NRTRLoss: 0.546207, loss: 1.043130, avg_reader_cost: 0.18941 s, avg_batch_cost: 0.52734 s, avg_samples: 93.75, ips: 177.77947 samples/s, eta: 0:02:53, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:11:13] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:11:16] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:11:16] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:11:16] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:11:16] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_14\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:11:19] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_14\inference\inference
+[2026/09/10 21:11:19] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_14
+[2026/09/10 21:11:19] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_14\iter_epoch_14
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.17it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.17it/s]
+[2026/09/10 21:11:27] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1281.568692604979
+[2026/09/10 21:11:28] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:11:31] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:11:32] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:11:32] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:11:32] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1281.568692604979, best_epoch: 15
+[2026/09/10 21:11:34] ppocr INFO: epoch: [15/30], global_step: 300, lr: 0.000803, acc: 0.816406, norm_edit_dis: 0.959285, CTCLoss: 0.501605, NRTRLoss: 0.535678, loss: 1.045778, avg_reader_cost: 0.15025 s, avg_batch_cost: 0.47389 s, avg_samples: 92.7, ips: 195.61508 samples/s, eta: 0:02:42, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:11:34] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:11:36] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:11:37] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:11:37] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:11:37] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_15\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:11:39] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_15\inference\inference
+[2026/09/10 21:11:40] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_15
+[2026/09/10 21:11:40] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_15\iter_epoch_15
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.26it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.26it/s]
+[2026/09/10 21:11:49] ppocr INFO: cur metric, acc: 0.8124999365234424, norm_edit_dis: 0.9375000048828122, fps: 1323.0036496080552
+[2026/09/10 21:11:49] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1281.568692604979, best_epoch: 15
+[2026/09/10 21:11:51] ppocr INFO: epoch: [16/30], global_step: 320, lr: 0.000762, acc: 0.814108, norm_edit_dis: 0.959636, CTCLoss: 0.488341, NRTRLoss: 0.532452, loss: 1.038318, avg_reader_cost: 0.19961 s, avg_batch_cost: 0.53803 s, avg_samples: 93.75, ips: 174.24690 samples/s, eta: 0:02:31, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:11:51] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:11:54] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:11:54] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:11:54] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:11:54] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_16\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:11:57] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_16\inference\inference
+[2026/09/10 21:11:57] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_16
+[2026/09/10 21:11:57] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_16\iter_epoch_16
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.29it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.29it/s]
+[2026/09/10 21:12:07] ppocr INFO: cur metric, acc: 0.9218749279785212, norm_edit_dis: 0.9759114602152505, fps: 1314.6549780348407
+[2026/09/10 21:12:07] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1281.568692604979, best_epoch: 15
+[2026/09/10 21:12:09] ppocr INFO: epoch: [17/30], global_step: 340, lr: 0.000718, acc: 0.828125, norm_edit_dis: 0.962462, CTCLoss: 0.421646, NRTRLoss: 0.529997, loss: 0.951770, avg_reader_cost: 0.21182 s, avg_batch_cost: 0.54297 s, avg_samples: 93.75, ips: 172.65998 samples/s, eta: 0:02:21, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:12:09] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:12:11] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:12:12] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:12:12] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:12:12] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_17\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:12:14] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_17\inference\inference
+[2026/09/10 21:12:15] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_17
+[2026/09/10 21:12:15] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_17\iter_epoch_17
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.08it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.08it/s]
+[2026/09/10 21:12:25] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1304.8171042622123
+[2026/09/10 21:12:25] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:12:28] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:12:29] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:12:29] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:12:29] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1304.8171042622123, best_epoch: 18
+[2026/09/10 21:12:30] ppocr INFO: epoch: [18/30], global_step: 360, lr: 0.000672, acc: 0.859375, norm_edit_dis: 0.972361, CTCLoss: 0.394282, NRTRLoss: 0.526756, loss: 0.919511, avg_reader_cost: 0.17661 s, avg_batch_cost: 0.49793 s, avg_samples: 93.75, ips: 188.27808 samples/s, eta: 0:02:10, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:12:30] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:12:32] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:12:33] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:12:33] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:12:33] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_18\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:12:35] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_18\inference\inference
+[2026/09/10 21:12:36] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_18
+[2026/09/10 21:12:36] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_18\iter_epoch_18
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]
+[2026/09/10 21:12:46] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1250.4300976594798
+[2026/09/10 21:12:46] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:12:49] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:12:50] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:12:50] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:12:50] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1250.4300976594798, best_epoch: 19
+[2026/09/10 21:12:51] ppocr INFO: epoch: [19/30], global_step: 380, lr: 0.000625, acc: 0.882353, norm_edit_dis: 0.978799, CTCLoss: 0.305733, NRTRLoss: 0.523154, loss: 0.833071, avg_reader_cost: 0.18063 s, avg_batch_cost: 0.51337 s, avg_samples: 93.75, ips: 182.61588 samples/s, eta: 0:01:59, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:12:51] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:12:53] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:12:54] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:12:54] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:12:54] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_19\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:12:56] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_19\inference\inference
+[2026/09/10 21:12:57] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_19
+[2026/09/10 21:12:57] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_19\iter_epoch_19
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.15it/s]
+[2026/09/10 21:13:07] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1309.4795750119515
+[2026/09/10 21:13:07] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:13:10] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:13:11] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:13:11] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:13:11] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1309.4795750119515, best_epoch: 20
+[2026/09/10 21:13:11] ppocr INFO: epoch: [20/30], global_step: 400, lr: 0.000576, acc: 0.890625, norm_edit_dis: 0.979106, CTCLoss: 0.289051, NRTRLoss: 0.522133, loss: 0.810009, avg_reader_cost: 0.18660 s, avg_batch_cost: 0.52008 s, avg_samples: 90.55, ips: 174.10846 samples/s, eta: 0:01:48, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:13:12] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:13:14] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:13:15] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:13:15] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:13:15] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_20\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:13:17] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_20\inference\inference
+[2026/09/10 21:13:18] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_20
+[2026/09/10 21:13:18] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_20\iter_epoch_20
+[2026/09/10 21:13:29] ppocr INFO: epoch: [21/30], global_step: 420, lr: 0.000526, acc: 0.900184, norm_edit_dis: 0.981047, CTCLoss: 0.280433, NRTRLoss: 0.522149, loss: 0.805009, avg_reader_cost: 0.22278 s, avg_batch_cost: 0.55847 s, avg_samples: 92.7, ips: 165.98888 samples/s, eta: 0:01:38, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  3.00it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.99it/s]
+[2026/09/10 21:13:29] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1321.7528934145123
+[2026/09/10 21:13:29] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:13:32] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:13:33] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:13:33] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:13:33] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1321.7528934145123, best_epoch: 21
+[2026/09/10 21:13:33] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:13:35] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:13:36] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:13:36] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:13:36] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_21\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:13:38] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_21\inference\inference
+[2026/09/10 21:13:39] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_21
+[2026/09/10 21:13:39] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_21\iter_epoch_21
+[2026/09/10 21:13:50] ppocr INFO: epoch: [22/30], global_step: 440, lr: 0.000476, acc: 0.911948, norm_edit_dis: 0.985161, CTCLoss: 0.247790, NRTRLoss: 0.520716, loss: 0.768678, avg_reader_cost: 0.19889 s, avg_batch_cost: 0.53582 s, avg_samples: 90.55, ips: 168.99245 samples/s, eta: 0:01:27, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:13:50] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:13:53] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:13:53] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:13:53] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:13:53] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_22\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:13:56] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_22\inference\inference
+[2026/09/10 21:13:56] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_22
+[2026/09/10 21:13:56] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_22\iter_epoch_22
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.03it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.03it/s]
+[2026/09/10 21:13:58] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1278.4071360366518
+[2026/09/10 21:13:58] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:14:01] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:14:03] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:14:03] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:14:03] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1278.4071360366518, best_epoch: 23
+[2026/09/10 21:14:11] ppocr INFO: epoch: [23/30], global_step: 460, lr: 0.000427, acc: 0.911948, norm_edit_dis: 0.982254, CTCLoss: 0.248626, NRTRLoss: 0.520470, loss: 0.769811, avg_reader_cost: 0.13636 s, avg_batch_cost: 0.46237 s, avg_samples: 92.7, ips: 200.49060 samples/s, eta: 0:01:16, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:14:11] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:14:14] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:14:14] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:14:14] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:14:14] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_23\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:14:17] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_23\inference\inference
+[2026/09/10 21:14:18] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_23
+[2026/09/10 21:14:18] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_23\iter_epoch_23
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]
+[2026/09/10 21:14:19] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1271.3292776781886
+[2026/09/10 21:14:19] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:14:22] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:14:24] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:14:24] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:14:24] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1271.3292776781886, best_epoch: 24
+[2026/09/10 21:14:32] ppocr INFO: epoch: [24/30], global_step: 480, lr: 0.000378, acc: 0.933594, norm_edit_dis: 0.985914, CTCLoss: 0.220163, NRTRLoss: 0.520627, loss: 0.740698, avg_reader_cost: 0.13430 s, avg_batch_cost: 0.46430 s, avg_samples: 90.55, ips: 195.02602 samples/s, eta: 0:01:05, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:14:33] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:14:35] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:14:36] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:14:36] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:14:36] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_24\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:14:38] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_24\inference\inference
+[2026/09/10 21:14:39] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_24
+[2026/09/10 21:14:39] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_24\iter_epoch_24
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.10it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.10it/s]
+[2026/09/10 21:14:41] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1287.2811743210777
+[2026/09/10 21:14:42] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:14:45] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:14:46] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:14:46] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:14:46] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1287.2811743210777, best_epoch: 25
+[2026/09/10 21:14:54] ppocr INFO: epoch: [25/30], global_step: 500, lr: 0.000330, acc: 0.925643, norm_edit_dis: 0.986139, CTCLoss: 0.204161, NRTRLoss: 0.520567, loss: 0.727880, avg_reader_cost: 0.15756 s, avg_batch_cost: 0.48073 s, avg_samples: 93.75, ips: 195.01438 samples/s, eta: 0:00:54, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:14:54] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:14:56] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:14:57] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:14:57] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:14:57] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_25\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:14:59] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_25\inference\inference
+[2026/09/10 21:15:00] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_25
+[2026/09/10 21:15:00] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_25\iter_epoch_25
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.02it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.02it/s]
+[2026/09/10 21:15:03] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1244.9007364535219
+[2026/09/10 21:15:03] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:15:06] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:15:08] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:15:08] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:15:08] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1244.9007364535219, best_epoch: 26
+[2026/09/10 21:15:15] ppocr INFO: epoch: [26/30], global_step: 520, lr: 0.000284, acc: 0.937500, norm_edit_dis: 0.988924, CTCLoss: 0.195974, NRTRLoss: 0.520469, loss: 0.716456, avg_reader_cost: 0.11623 s, avg_batch_cost: 0.45802 s, avg_samples: 90.55, ips: 197.69908 samples/s, eta: 0:00:43, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:15:15] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:15:18] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:15:18] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:15:18] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:15:19] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_26\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:15:21] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_26\inference\inference
+[2026/09/10 21:15:22] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_26
+[2026/09/10 21:15:22] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_26\iter_epoch_26
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.18it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.18it/s]
+[2026/09/10 21:15:25] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1313.484217273657
+[2026/09/10 21:15:25] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:15:28] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:15:30] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:15:30] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:15:30] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1313.484217273657, best_epoch: 27
+[2026/09/10 21:15:36] ppocr INFO: epoch: [27/30], global_step: 540, lr: 0.000240, acc: 0.937500, norm_edit_dis: 0.988546, CTCLoss: 0.171266, NRTRLoss: 0.520430, loss: 0.694989, avg_reader_cost: 0.13872 s, avg_batch_cost: 0.46283 s, avg_samples: 92.7, ips: 200.29047 samples/s, eta: 0:00:32, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:15:37] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:15:39] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:15:40] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:15:40] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:15:40] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_27\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:15:42] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_27\inference\inference
+[2026/09/10 21:15:43] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_27
+[2026/09/10 21:15:43] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_27\iter_epoch_27
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.08it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.08it/s]
+[2026/09/10 21:15:48] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1202.740560024912
+[2026/09/10 21:15:48] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:15:51] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:15:53] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:15:53] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:15:53] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1202.740560024912, best_epoch: 28
+[2026/09/10 21:15:58] ppocr INFO: epoch: [28/30], global_step: 560, lr: 0.000199, acc: 0.953125, norm_edit_dis: 0.992997, CTCLoss: 0.155085, NRTRLoss: 0.520380, loss: 0.675432, avg_reader_cost: 0.12958 s, avg_batch_cost: 0.45950 s, avg_samples: 92.7, ips: 201.74206 samples/s, eta: 0:00:21, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:15:58] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:16:00] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:16:01] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:16:01] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:16:01] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_28\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:16:04] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_28\inference\inference
+[2026/09/10 21:16:05] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_28
+[2026/09/10 21:16:05] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_28\iter_epoch_28
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.16it/s]
+[2026/09/10 21:16:09] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1295.3753679557585
+[2026/09/10 21:16:09] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:16:12] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:16:14] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:16:14] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:16:14] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1295.3753679557585, best_epoch: 29
+[2026/09/10 21:16:19] ppocr INFO: epoch: [29/30], global_step: 580, lr: 0.000161, acc: 0.937500, norm_edit_dis: 0.988925, CTCLoss: 0.167664, NRTRLoss: 0.520442, loss: 0.688093, avg_reader_cost: 0.13554 s, avg_batch_cost: 0.46521 s, avg_samples: 92.7, ips: 199.26516 samples/s, eta: 0:00:11, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:16:20] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:16:22] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:16:23] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:16:23] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:16:23] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_29\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:16:25] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_29\inference\inference
+[2026/09/10 21:16:26] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_29
+[2026/09/10 21:16:26] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_29\iter_epoch_29
+eval model::   0%|          | 0/2 [00:00<?, ?it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.17it/s]eval model::  50%|#####     | 1/2 [00:00<00:00,  2.17it/s]
+[2026/09/10 21:16:31] ppocr INFO: cur metric, acc: 0.9999999218750061, norm_edit_dis: 1.0, fps: 1308.8028083861532
+[2026/09/10 21:16:32] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:16:35] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\inference\inference
+[2026/09/10 21:16:36] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy
+[2026/09/10 21:16:36] ppocr INFO: save best model is to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\best_accuracy\best_accuracy
+[2026/09/10 21:16:36] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1308.8028083861532, best_epoch: 30
+[2026/09/10 21:16:41] ppocr INFO: epoch: [30/30], global_step: 600, lr: 0.000126, acc: 0.953125, norm_edit_dis: 0.991826, CTCLoss: 0.148979, NRTRLoss: 0.520426, loss: 0.671810, avg_reader_cost: 0.12443 s, avg_batch_cost: 0.45947 s, avg_samples: 90.55, ips: 197.07517 samples/s, eta: 0:00:00, max_mem_reserved: 16800 MB, max_mem_allocated: 15625 MB
+[2026/09/10 21:16:41] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:16:44] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\inference\inference
+[2026/09/10 21:16:45] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest
+[2026/09/10 21:16:45] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\latest\latest
+[2026/09/10 21:16:45] ppocr INFO: Export inference config file to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_30\inference\inference.yml
+Skipping import of the encryption module
+[2026/09/10 21:16:47] ppocr INFO: inference model is saved to C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_30\inference\inference
+[2026/09/10 21:16:48] ppocr INFO: Already save model info in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_30
+[2026/09/10 21:16:48] ppocr INFO: save model in C:\Users\cnoji\dev\fgf-watcher\ocr_training\promotion_badge_output\iter_epoch_30\iter_epoch_30
+[2026/09/10 21:16:48] ppocr INFO: best metric, acc: 0.9999999218750061, is_float16: False, norm_edit_dis: 1.0, fps: 1308.8028083861532, best_epoch: 30

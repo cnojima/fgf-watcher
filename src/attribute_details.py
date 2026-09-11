@@ -43,8 +43,8 @@ from pathlib import Path
 
 from PIL import Image
 
+import paddle_ocr_blocks
 from input_control import click
-from ocr import preprocess, pytesseract
 from profiles.ui_layout import get_layout
 from scroll_stitch import stitch_scrolled_region
 
@@ -326,19 +326,20 @@ def read_attribute_details(hwnd, name) -> dict[str, dict[str, str]]:
     composite.save(DEBUG_DIR / "_debug_attribute_stitch.png")
     log.debug("Stitched composite: %dx%d", composite.width, composite.height)
 
-    # psm 6 was silently dropping whole section-header lines (e.g. "HP
-    # 1,029,897") once the composite grew past a couple hundred px tall, even
-    # though the exact same crop OCR'd correctly in isolation - psm 4 fixed
-    # that at the time, but on a full multi-section composite (2700+px tall,
-    # confirmed via the saved debug composite) psm 4 regressed to the same
-    # failure: it dropped every section header except the very first,
-    # confirmed by comparing psm 4/6 output against psm 12 on the identical
-    # saved image - the header text wasn't misread, it just wasn't detected
-    # as text at all (each header row sits in its own visually boxed/shaded
-    # region, which apparently confuses layout modes that assume a uniform
-    # text column). psm 12 (sparse text) treats each visual block
-    # independently and recovered every header on that same comparison.
-    text = pytesseract.image_to_string(preprocess(composite, upscale=2), config="--psm 12").strip()
+    # Was Tesseract psm 12 (sparse text) - needed after psm 6/4 both
+    # silently dropped section-header lines on a composite this tall (each
+    # header row sits in its own visually boxed/shaded region, which
+    # confused layout modes assuming a uniform text column). Replaced by
+    # PaddleOCR's full detection+recognition pipeline (see
+    # paddle_ocr_blocks.py and the OCR-consolidation plan) - confirmed
+    # directly against this exact table: 100% confidence end to end,
+    # correctly split the one wrapped multi-line header ("Chance to inflict
+    # Major" / "Damage"), and caught a "Promotion 4.50%" sub-row that
+    # Tesseract's psm 12 had been silently dropping (heal_totals was
+    # papering over that by "healing" Damage Reduction's total to match the
+    # incomplete sub-rows - 38.30% instead of the true 42.80% - a real
+    # silent data bug this fixes rather than just matches).
+    text = paddle_ocr_blocks.read_text_block(composite)
     (DEBUG_DIR / "_debug_attribute_ocr.txt").write_text(text, encoding="utf-8")
 
     data: dict[str, dict[str, str]] = {}

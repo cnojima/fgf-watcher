@@ -1,9 +1,19 @@
 __pycache__/
 *.pyc
 
+# ocr_training/
+
+# Training checkpoints/exports and the synthetic dataset are regenerated
+# locally (generate_orange_kid_data.py + train.py) and multi-GB per run -
+# not meant for version control.
+ocr_training/output*/
+ocr_training/orange_kid_dataset/
+ocr_training/promotion_badge_output*/
+ocr_training/promotion_badge_dataset/
+
 # Screenshots and OCR logs are regenerated locally by calibrate.py/tracker.py
 # and often contain live guild chat/usernames - not meant for version control.
 data/
-.venv/
+.venv*
 tmp/
 .DS_Store

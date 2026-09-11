@@ -26,9 +26,9 @@ one.
 import logging
 import time
 
+import paddle_ocr_blocks
 from capture import screenshot_region
 from input_control import click
-from ocr import preprocess, pytesseract
 from profiles.champion_layout import ChampionLayout
 from scroll_stitch import stitch_scrolled_region
 
@@ -38,7 +38,7 @@ _ABILITY_SLOTS = ("space_1", "space_2", "space_3", "ultimate", "ground_1", "grou
 
 
 def _ocr_multiline(img) -> str:
-    return pytesseract.image_to_string(preprocess(img, upscale=2), config="--psm 6").strip()
+    return paddle_ocr_blocks.read_text_block(img)
 
 
 def _read_ability_card(hwnd, layout: ChampionLayout) -> str:
