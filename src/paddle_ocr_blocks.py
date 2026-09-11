@@ -18,12 +18,18 @@ Two things needed to get there, not assumed:
 - Reconstructing row-level text from the detector's individual (often
   column-separated, e.g. "HP" ... "558,760") boxes, since a recognition
   pipeline naturally returns one text per detected region, not one per
-  visual row. Groups boxes into rows by vertical (y) proximity, orders each
-  row left-to-right, and joins with a space - producing the same "label
-  value" per-line shape Tesseract's psm 6/12 output already had, so
-  attribute_details.py's whole parsing pipeline (_join_wrapped_lines,
-  _classify_label, _parse, validate_sections, heal_totals) needed zero
-  changes, just a different text source.
+  visual row. Groups boxes into rows by Y-range *overlap* (see
+  _cluster_by_overlap) rather than distance-to-a-fixed-point - the latter
+  looked fine on this module's original ship-attribute-table test case but
+  broke, confirmed live, on a weapon-stats table with a wrapped 2-line
+  label ("Kinetic DMG Advantage" / "Boost"): the wrapped continuation word
+  got attached to the *next* row instead of its own, corrupting both rows'
+  data ("Boost Formation ATK Bonus" as one label). Orders each row
+  left-to-right (by column, then top-to-bottom within a column) and joins
+  with a space, producing the same "label value" per-line shape Tesseract's
+  psm 6/12 output already had, so attribute_details.py's whole parsing
+  pipeline (_join_wrapped_lines, _classify_label, _parse, validate_sections,
+  heal_totals) needed zero changes, just a different text source.
 """
 import logging
 
@@ -48,23 +54,73 @@ def _get_pipeline():
     return _pipeline
 
 
-def _group_into_rows(boxes: list, texts: list) -> list[str]:
-    """boxes are [x1, y1, x2, y2]. Buckets by vertical proximity (row center
-    within 0.6x the box's own height of an existing row's center) rather
-    than a fixed pixel tolerance, since row height varies with font size
-    across different UI contexts."""
-    items = sorted(zip(boxes, texts), key=lambda t: (t[0][1] + t[0][3]) / 2)
-    rows: list[dict] = []
-    for box, text in items:
-        y_center = (box[1] + box[3]) / 2
-        height = box[3] - box[1]
-        for row in rows:
-            if abs(row["y"] - y_center) < height * 0.6:
-                row["items"].append((box[0], text))
+def _cluster_by_overlap(items: list[tuple], lo: int, hi: int) -> list[list[tuple]]:
+    """Buckets items (tuples with numeric fields at indices lo/hi, e.g.
+    (x0, y0, y1, text)) into groups by actual range overlap on the (lo, hi)
+    span against any existing member of a group - not distance-to-a-frozen-
+    reference-point, which breaks in two different, confirmed-live ways (see
+    _group_into_rows's docstring): (1) a wrapped label's own continuation
+    line can sit centered closer to the *next* row than to its own row, and
+    (2) two boxes on the visually same line can differ by a stray 1-2px in
+    y0 - real detection noise, not a second line - which would otherwise
+    flip their left-to-right order if sorted by y0 first. Overlap-based
+    clustering handles both: a continuation line overlaps the *value* box
+    sitting at its own row's first line even when it doesn't overlap that
+    row's label box, and same-line noise trivially overlaps itself."""
+    ordered = sorted(items, key=lambda i: i[lo])
+    groups: list[list[tuple]] = []
+    for item in ordered:
+        matched = None
+        for group in groups:
+            if any(item[lo] < g[hi] and item[hi] > g[lo] for g in group):
+                matched = group
                 break
+        if matched is not None:
+            matched.append(item)
         else:
-            rows.append({"y": y_center, "items": [(box[0], text)]})
-    return [" ".join(text for _, text in sorted(row["items"], key=lambda t: t[0])) for row in rows]
+            groups.append([item])
+    groups.sort(key=lambda group: min(i[lo] for i in group))
+    return groups
+
+
+def _group_into_rows(boxes: list, texts: list) -> list[str]:
+    """boxes are [x1, y1, x2, y2].
+
+    Clusters into rows by Y-range overlap (see _cluster_by_overlap) - fixes
+    a real, confirmed-live data-corruption bug: a label that wraps onto its
+    own second line ("Kinetic DMG Advantage" / "Boost", with the value
+    "0.6%" sitting at the *first* line's height) previously got its
+    continuation word attached to the *next* row instead of its own, which
+    then fed "Boost" into `_join_wrapped_lines`'s "no trailing number ->
+    prepend to whatever comes next" fallback, producing "Boost Formation
+    ATK Bonus" (a different row's label with the previous row's leftover
+    word glued onto its front).
+
+    Within a row, splits into columns by the single largest horizontal gap
+    between item x-positions (label column vs. value column; a row with
+    only one item skips this) so a wrapped label's second line joins the
+    label column rather than getting sorted in between the label and the
+    value - then orders each column top-to-bottom by the same overlap
+    clustering (not a raw (y, x) sort, which flips same-line items whose y0
+    differs by only detection noise - confirmed live: two value boxes on
+    the same "POWER" row differed by 1px in y0 and came out reversed under
+    a plain sort), and concatenates columns left to right."""
+    items = [(box[0], box[1], box[3], text) for box, text in zip(boxes, texts)]  # (x0, y0, y1, text)
+    rows = _cluster_by_overlap(items, lo=1, hi=2)
+
+    lines = []
+    for row in rows:
+        xs = sorted(item[0] for item in row)
+        gaps = [(xs[i + 1] - xs[i], xs[i]) for i in range(len(xs) - 1)]
+        split_after_x = max(gaps)[1] if gaps else None
+        left = [i for i in row if split_after_x is None or i[0] <= split_after_x]
+        right = [i for i in row if split_after_x is not None and i[0] > split_after_x]
+        ordered_texts = []
+        for column in (left, right):
+            for line in _cluster_by_overlap(column, lo=1, hi=2):
+                ordered_texts.extend(i[3] for i in sorted(line, key=lambda i: i[0]))
+        lines.append(" ".join(ordered_texts))
+    return lines
 
 
 def read_text_block(image: Image.Image) -> str:

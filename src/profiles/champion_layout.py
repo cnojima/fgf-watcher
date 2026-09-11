@@ -344,7 +344,15 @@ _CHAMPION_LAYOUT_PROFILES: dict[ProfileKey, ChampionLayout] = {
         # back() called with no overlay actually open, so the click landed
         # on bare map content instead of any button).
         attribute_modal_close=(1697, 235),
-        attribute_modal_box=(930, 455, 1650, 950),
+        # x0 corrected this session from 930 to 885 - the old value clipped
+        # the left stroke of the first letter on every row ("Formation" ->
+        # "ormation" every time; "Champion" -> ":hampion" on one row where
+        # anti-aliasing happened to leave a stray mark instead of nothing).
+        # Not a font/OCR problem - confirmed by cropping the exact old box
+        # and looking at it directly (see CLAUDE.md's descender-clipping
+        # lesson, same failure mode rotated 90 degrees). Re-verify with
+        # calibrate.py zoom if this box is ever suspected stale again.
+        attribute_modal_box=(885, 455, 1650, 950),
         # Weapon detail page fields below: all confirmed live once
         # weapon_badge_click's fix (above) actually opened the page. Read
         # off a maxed signature weapon's page (Zora Domini's "Endless
