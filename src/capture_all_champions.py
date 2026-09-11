@@ -16,7 +16,7 @@ from capture import find_window, screenshot_region, screenshot_window
 from capture_run import CaptureRun
 from champion_ability import ABILITY_SLOTS
 from champion_weapon import BONUS_SLOTS, close_weapon_page, has_weapon_equipped
-from champions import close_card, enumerate_grid, goto_champion_grid, on_grid, open_card, recover_to_grid
+from champions import check_last_row_after_scroll, close_card, enumerate_grid, goto_champion_grid, on_grid, open_card, recover_to_grid
 from input_control import click, focus_window
 from logging_setup import configure_logging
 from nav import back
@@ -149,9 +149,27 @@ def capture_all_champions(hwnd, output: Path) -> Path:
     positions = enumerate_grid(hwnd, layout)
     log.info("Found %d unlocked champion(s) in the visible grid", len(positions))
 
-    for champion_index, (col, row) in enumerate(positions):
+    champion_index = 0
+    for col, row in positions:
         open_card(hwnd, layout, col, row)
         _capture_champion(run, hwnd, layout, champion_index)
+        champion_index += 1
+        close_card(hwnd)
+        if not on_grid(hwnd, layout):
+            recover_to_grid(hwnd, layout)
+
+    # A real champion in the grid's last row can have its status text
+    # render below the visible window even though the card itself is fully
+    # visible (confirmed live - see champions.py's module docstring), which
+    # enumerate_grid's unscrolled check can't see. Scroll down once and
+    # check that row's remaining columns at their confirmed post-scroll
+    # position.
+    last_row = len(layout.grid_rows) - 1
+    already = {col for col, row in positions if row == last_row}
+    for col in check_last_row_after_scroll(hwnd, layout, already):
+        open_card(hwnd, layout, col, last_row, cy_override=layout.grid_scrolled_last_row_y)
+        _capture_champion(run, hwnd, layout, champion_index)
+        champion_index += 1
         close_card(hwnd)
         if not on_grid(hwnd, layout):
             recover_to_grid(hwnd, layout)

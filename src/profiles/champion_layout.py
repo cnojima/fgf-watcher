@@ -152,6 +152,29 @@ class ChampionLayout:
     # confirm the colors actually differ there).
     weapon_maxed_fingerprint: tuple[tuple[int, int, tuple[int, int, int]], ...] | None = None
 
+    # champions.check_last_row_after_scroll: a real champion in the grid's
+    # last row can have its status text render below the visible window
+    # (confirmed live), unlike anything else in this grid - these support
+    # scrolling down once to reveal it. grid_scroll_measure_box must stay
+    # within the scrollable card area only (no fixed title/button chrome),
+    # and drag_from/drag_to don't need to be precise - the actual movement
+    # is measured from real content (see _scroll_grid_down), same principle
+    # as every other scroll in this codebase.
+    grid_scroll_drag_from: tuple[int, int] | None = None
+    grid_scroll_drag_to: tuple[int, int] | None = None
+    grid_scroll_measure_box: tuple[int, int, int, int] | None = None
+
+    # The last row's confirmed "cy" (equivalent to a grid_rows entry) once
+    # scrolling has revealed it - NOT derived from any measured scroll
+    # offset. Confirmed live the grid doesn't uniformly translate all
+    # content by the drag's measured pixel movement: the last row instead
+    # snaps to this fixed resting position once scrolled into view (found
+    # by direct search against a real "scrolled to bottom" screenshot,
+    # confirmed reading "165" cleanly for the one real champion there and
+    # "empty" for every other column in that row - see champions.py's
+    # module docstring).
+    grid_scrolled_last_row_y: int | None = None
+
     @property
     def weapon_stats_expected_scroll_offset(self) -> int:
         drag_from = require_field(self.weapon_stats_drag_from, "weapon_stats_drag_from")
@@ -161,6 +184,12 @@ class ChampionLayout:
     @property
     def ability_expected_scroll_offset(self) -> int:
         return self.ability_scroll_drag_from[1] - self.ability_scroll_drag_to[1]
+
+    @property
+    def grid_scroll_expected_offset(self) -> int:
+        drag_from = require_field(self.grid_scroll_drag_from, "grid_scroll_drag_from")
+        drag_to = require_field(self.grid_scroll_drag_to, "grid_scroll_drag_to")
+        return drag_from[1] - drag_to[1]
 
 
 _CHAMPION_LAYOUT_PROFILES: dict[ProfileKey, ChampionLayout] = {
@@ -176,6 +205,26 @@ _CHAMPION_LAYOUT_PROFILES: dict[ProfileKey, ChampionLayout] = {
         # past this window's own 1280px width - could never have landed on
         # real content here (see this field's docstring above).
         grid_title_box=(580, 30, 710, 70),
+        # Confirmed live: dragging from (640, 550) to (640, 250) (a 300px
+        # throw, well within the visible card grid, over card art the same
+        # way attribute_details.py's drag sits on top of table content)
+        # measured a real 102px upward content shift via
+        # grid_scroll_measure_box - confirmed by comparing two saved
+        # screenshots (top vs. scrolled-to-bottom) with independent
+        # cross-correlation checks at two different y-anchors, both
+        # agreeing exactly at 102px. grid_scroll_measure_box excludes the
+        # fixed "CHAMPION" title (ends ~y=90) and the fixed bottom bar/
+        # RECRUIT button (starts ~y=750) - confirmed by direct pixel
+        # inspection, not guessed.
+        grid_scroll_drag_from=(640, 550),
+        grid_scroll_drag_to=(640, 250),
+        grid_scroll_measure_box=(390, 90, 890, 700),
+        # Confirmed via direct search against a real "scrolled to bottom"
+        # screenshot (not derived from the 102px general content-shift
+        # measured above - that value read as garbage at this row, see
+        # champions.py's module docstring): (695 - 58), reading "165" for
+        # the one real champion in this row and "empty" for the rest.
+        grid_scrolled_last_row_y=637,
         name_box=(433, 42, 700, 68),
         title_box=(433, 70, 600, 90),
         quality_box=(800, 68, 930, 90),

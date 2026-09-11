@@ -17,7 +17,7 @@ from champion_attributes import read_attributes
 from champion_info import read_info
 from champion_star_level import read_star_level
 from champion_weapon import close_weapon_page, has_weapon_equipped, read_weapon
-from champions import close_card, enumerate_grid, goto_champion_grid, on_grid, open_card, recover_to_grid
+from champions import check_last_row_after_scroll, close_card, enumerate_grid, goto_champion_grid, on_grid, open_card, recover_to_grid
 from input_control import click, focus_window
 from logging_setup import configure_logging
 from nav import back
@@ -105,8 +105,8 @@ def collect_all_champions(hwnd) -> dict[str, dict]:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     results: dict[str, dict] = {}
 
-    for col, row in positions:
-        open_card(hwnd, layout, col, row)
+    def _process(col: int, row: int, cy_override: int | None = None) -> None:
+        open_card(hwnd, layout, col, row, cy_override=cy_override)
         data = collect_champion(hwnd, layout)
         name = data["info"]["name"] or f"unknown_{col}_{row}"
 
@@ -119,6 +119,20 @@ def collect_all_champions(hwnd) -> dict[str, dict]:
         close_card(hwnd)
         if not on_grid(hwnd, layout):
             recover_to_grid(hwnd, layout)
+
+    for col, row in positions:
+        _process(col, row)
+
+    # A real champion in the grid's last row can have its status text
+    # render below the visible window even though the card itself is fully
+    # visible (confirmed live - see champions.py's module docstring), which
+    # enumerate_grid's unscrolled check can't see. Scroll down once and
+    # check that row's remaining columns at their confirmed post-scroll
+    # position.
+    last_row = len(layout.grid_rows) - 1
+    already = {col for col, row in positions if row == last_row}
+    for col in check_last_row_after_scroll(hwnd, layout, already):
+        _process(col, last_row, cy_override=layout.grid_scrolled_last_row_y)
 
     log.info("Finished champion collection: %d champion(s)", len(results))
     return results

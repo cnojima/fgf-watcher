@@ -193,6 +193,17 @@ calibrated), plus `ability-<slot>` (scroll sequence) for each of the 7
 ability slots. `results.json`'s shape mirrors `collect_all_champions.py`'s
 own per-champion output (`info`/`star_level`/`attributes`/`weapon`/`abilities`).
 
+**Champion grid scrolling is only handled for one extra row.** If the
+champion roster doesn't fit in one screen, the grid's last row can render a
+real champion's card fully while its status/level text sits below the
+visible window - unreadable, but not a locked/empty slot. Both scripts
+scroll down once and re-check that row at a confirmed resting position
+(`ChampionLayout.grid_scrolled_last_row_y`) after the normal unscrolled pass.
+This does NOT generalize to a roster needing more than one such scroll (two+
+rows' worth of champions beyond what fits in one viewport) - see
+`champions.py`'s module docstring. If you hit that case, some champions past
+the second overflow row will be silently skipped rather than erroring.
+
 ## Troubleshooting: "No game window matching '...' found"
 
 Means the window-title substring search came up empty at the moment the tool
