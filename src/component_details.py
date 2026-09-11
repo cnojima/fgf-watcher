@@ -34,6 +34,7 @@ log = logging.getLogger(__name__)
 # icon glyph OCR sometimes reads as a stray character (e.g. "\4 POWER...") -
 # that gets stripped by _clean_leading_noise before this ever sees the line.
 _STAT_LINE = re.compile(r"^([A-Za-z][A-Za-z ]*)\s+([\d,\.]+%?)")
+_COMPOUND_STAT_TOKENS = frozenset({"HP", "ATTACK", "INT", "DEF"})
 
 
 def _clean_leading_noise(line: str) -> str:
@@ -51,7 +52,13 @@ def _read_stats(hwnd, layout) -> dict[str, str]:
     for line in _read_multiline(hwnd, stats_box).splitlines():
         m = _STAT_LINE.match(_clean_leading_noise(line))
         if m:
-            stats[m.group(1).strip()] = m.group(2)
+            label = m.group(1).strip()
+            value = m.group(2)
+            tokens = label.split()
+            if len(tokens) > 1 and all(token in _COMPOUND_STAT_TOKENS for token in tokens):
+                stats.update({token: value for token in tokens})
+            else:
+                stats[label] = value
     return stats
 
 

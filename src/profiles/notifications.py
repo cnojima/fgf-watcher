@@ -36,10 +36,13 @@ _NOTIFICATION_PROFILES: dict[ProfileKey, Fingerprint] = {
     # background - none close to this bright near-white), so a single
     # point is enough to tell presence apart from absence confidently.
     ("win32", (2560, 1600)): Fingerprint(points=[(1830, 160, (253, 231, 175))], tolerance=20),
+    ("darwin", (1280, 828)): Fingerprint(points=[(913, 108, (253, 231, 175))], tolerance=20),
+
 }
 
 _CLOSE_BUTTON: dict[ProfileKey, tuple[int, int]] = {
     ("win32", (2560, 1600)): (1830, 160),
+    ("darwin", (1280, 828)): (913, 108),
 }
 
 
