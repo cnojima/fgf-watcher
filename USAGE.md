@@ -138,6 +138,37 @@ a Python shell with `hwnd = capture.find_window(...)`), not run directly:
 - **`fingerprints.current_screen(hwnd)`** — which catalogued screen (if any)
   is currently showing, by pixel-color fingerprint.
 
+## 4. `capture_all_flagships.py` + `replay_all_flagships.py` — deterministic OCR tuning
+
+Two-phase alternative to `collect_all_flagships.py`, for tuning/testing the
+OCR flows without needing the live game running on every attempt. Phase 1
+does all screen navigation/clicking and saves full-window screenshots; phase
+2 runs OCR entirely offline against those saved images, and can be re-run
+repeatedly (with different OCR/parser code) against the exact same pixels.
+
+```
+python src/capture_all_flagships.py data/runs/my-capture
+python src/replay_all_flagships.py data/runs/my-capture --output data/runs/my-capture/replay-v1
+```
+
+Windows: run the capture step via `run_admin.ps1` like `collect_all_flagships.py`
+(it clicks/drags); the replay step needs no elevation (no window access at all).
+
+- Phase 1 writes `data/runs/my-capture/frames/ship-NNN/*.png` (one full-window
+  PNG per screen/scroll-frame) plus a `manifest.json` (frame kind, ship index,
+  sequence, sha256, platform/window size). It never runs OCR to decide
+  anything except when to stop (ship name/level-badge checks).
+- Phase 2 loads only from that manifest - it never imports `click`/`drag`/
+  `focus_window`/`goto`/`back`, so it can't touch the game window even by
+  accident. Verifies each frame's sha256 before use (fails loudly if a frame
+  was edited/replaced on disk), then writes `replay-v1/raw/ship-NNN/*.json`
+  (per-field raw OCR output, plus the stitched attribute-table composite) and
+  one `replay-v1/results.json` summary across all ships.
+- Re-running just the replay step (no capture, no game) is the fast loop for
+  tuning OCR: change a crop box, a PSM mode, a parser regex, then rerun
+  `replay_all_flagships.py` against the same capture directory and diff the
+  new `results.json` against the previous one.
+
 ## Troubleshooting: "No game window matching '...' found"
 
 Means the window-title substring search came up empty at the moment the tool

@@ -40,12 +40,22 @@ log = logging.getLogger(__name__)
 
 _pipeline = None
 
+# See _cluster_by_overlap's min_overlap docstring: every genuine same-row
+# label/value overlap measured against a real capture was 20px+, while the
+# boundary-noise overlap that incorrectly bridged two distinct rows was 1-2px.
+_ROW_OVERLAP_MARGIN = 5
+
 
 def _get_pipeline():
     global _pipeline
     if _pipeline is None:
         log.info("Loading PaddleOCR detection+recognition pipeline (first use - a few seconds)")
         from paddleocr import PaddleOCR
+        # See paddle_ocr.py's _get_model() for why this must come after the
+        # import, not before: paddlex's own import-time setup_logging() sets
+        # its "paddlex" logger to INFO unconditionally, so quieting it any
+        # earlier gets silently overwritten.
+        logging.getLogger("paddlex").setLevel(logging.WARNING)
         _pipeline = PaddleOCR(
             lang="en",
             use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=False,
@@ -54,7 +64,7 @@ def _get_pipeline():
     return _pipeline
 
 
-def _cluster_by_overlap(items: list[tuple], lo: int, hi: int) -> list[list[tuple]]:
+def _cluster_by_overlap(items: list[tuple], lo: int, hi: int, min_overlap: int = 1) -> list[list[tuple]]:
     """Buckets items (tuples with numeric fields at indices lo/hi, e.g.
     (x0, y0, y1, text)) into groups by actual range overlap on the (lo, hi)
     span against any existing member of a group - not distance-to-a-frozen-
@@ -66,13 +76,26 @@ def _cluster_by_overlap(items: list[tuple], lo: int, hi: int) -> list[list[tuple
     flip their left-to-right order if sorted by y0 first. Overlap-based
     clustering handles both: a continuation line overlaps the *value* box
     sitting at its own row's first line even when it doesn't overlap that
-    row's label box, and same-line noise trivially overlaps itself."""
+    row's label box, and same-line noise trivially overlaps itself.
+
+    min_overlap raises the bar above "any positive overlap" (the default,
+    matching the original behavior). Needed for row-level clustering (see
+    _group_into_rows): confirmed directly against a real capture where a
+    bold value glyph's box (e.g. "4,405") sat a couple pixels taller than
+    its own row and dipped 1-2px into the *next* row's label box, which
+    then transitively chain-merged four separate component-stat rows
+    (ATTACK/DEF/INT/Command Points) into one garbled line - every genuine
+    same-row label/value pair measured in that capture overlapped by 20px+,
+    so a small margin cleanly rejects that boundary noise without affecting
+    same-line noise (still overlaps itself trivially) or a wrapped
+    continuation line (merges via much deeper overlap than a couple of
+    stray pixels)."""
     ordered = sorted(items, key=lambda i: i[lo])
     groups: list[list[tuple]] = []
     for item in ordered:
         matched = None
         for group in groups:
-            if any(item[lo] < g[hi] and item[hi] > g[lo] for g in group):
+            if any(min(item[hi], g[hi]) - max(item[lo], g[lo]) >= min_overlap for g in group):
                 matched = group
                 break
         if matched is not None:
@@ -106,7 +129,7 @@ def _group_into_rows(boxes: list, texts: list) -> list[str]:
     the same "POWER" row differed by 1px in y0 and came out reversed under
     a plain sort), and concatenates columns left to right."""
     items = [(box[0], box[1], box[3], text) for box, text in zip(boxes, texts)]  # (x0, y0, y1, text)
-    rows = _cluster_by_overlap(items, lo=1, hi=2)
+    rows = _cluster_by_overlap(items, lo=1, hi=2, min_overlap=_ROW_OVERLAP_MARGIN)
 
     lines = []
     for row in rows:

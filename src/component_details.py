@@ -46,10 +46,13 @@ def _read_multiline(hwnd, box: tuple[int, int, int, int]) -> str:
     return paddle_ocr_blocks.read_text_block(img)
 
 
-def _read_stats(hwnd, layout) -> dict[str, str]:
-    stats_box = require_field(layout.component_stats_box, "component_stats_box")
+def parse_component_stats(text: str) -> dict[str, str]:
+    """Pure parse of the component stats block's OCR text - shared by the
+    live reader below and offline replay, so a tuning change to the
+    compound-label expansion (see _STAT_LINE/_COMPOUND_STAT_TOKENS above)
+    only has to be made once."""
     stats = {}
-    for line in _read_multiline(hwnd, stats_box).splitlines():
+    for line in text.splitlines():
         m = _STAT_LINE.match(_clean_leading_noise(line))
         if m:
             label = m.group(1).strip()
@@ -60,6 +63,11 @@ def _read_stats(hwnd, layout) -> dict[str, str]:
             else:
                 stats[label] = value
     return stats
+
+
+def _read_stats(hwnd, layout) -> dict[str, str]:
+    stats_box = require_field(layout.component_stats_box, "component_stats_box")
+    return parse_component_stats(_read_multiline(hwnd, stats_box))
 
 
 def _normalize_name(name: str) -> str:

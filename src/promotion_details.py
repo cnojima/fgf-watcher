@@ -65,17 +65,29 @@ def _is_maxed(hwnd, layout) -> bool:
     return maxed
 
 
-def read_promotion_level(hwnd, layout) -> int:
-    """Returns 0-6. Checks the PROMOTE/PROMOTED button first: a maxed
-    ship's badge (in the same promotion_badge_box slot as every other
-    level - see module docstring) has been misread as a stray "V" under
-    the Roman-numeral OCR, reporting level 5 instead of 6. Checking maxed
-    first avoids ever trusting that box's OCR on a maxed ship."""
-    if _is_maxed(hwnd, layout):
+def classify_promotion(button_text: str, badge_text: str) -> int:
+    """Pure classification of a ship's promotion level (0-6) from already
+    OCR'd text - shared by the live reader below and offline replay. Checks
+    the PROMOTE/PROMOTED button text first: a maxed ship's badge (in the
+    same promotion_badge_box slot as every other level - see module
+    docstring) has been misread as a stray "V" under the Roman-numeral OCR,
+    reporting level 5 instead of 6. Checking the button first means
+    badge_text is never trusted on a maxed ship, whatever it OCR'd to."""
+    if "PROMOTED" in button_text.upper():
         return 6
+    return _ROMAN_TO_LEVEL.get(badge_text, 0)
+
+
+def read_promotion_level(hwnd, layout) -> int:
+    """Returns 0-6. Skips the badge OCR entirely when the button already
+    says PROMOTED - see classify_promotion for why that box's OCR is
+    unreliable on a maxed ship anyway, so there's no reason to spend a
+    second OCR call reading it in that case."""
+    if _is_maxed(hwnd, layout):
+        return classify_promotion("PROMOTED", "")
 
     text = _read_badge_text(hwnd, layout)
-    level = _ROMAN_TO_LEVEL.get(text, 0)
+    level = classify_promotion("", text)
     log.debug("Promotion badge OCR: %r -> level=%d", text, level)
     return level
 

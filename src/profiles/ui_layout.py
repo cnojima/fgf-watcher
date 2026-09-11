@@ -224,3 +224,14 @@ _LAYOUT_PROFILES: dict[ProfileKey, UILayout] = {
 
 def get_layout(hwnd) -> UILayout:
     return select_profile(hwnd, _LAYOUT_PROFILES, "UI layout")
+
+
+def get_layout_for_profile(profile: ProfileKey) -> UILayout:
+    """Return calibrated coordinates without requiring a live game window."""
+    if profile in _LAYOUT_PROFILES:
+        return _LAYOUT_PROFILES[profile]
+    fallback = (profile[0], (0, 0))
+    if fallback in _LAYOUT_PROFILES:
+        return _LAYOUT_PROFILES[fallback]
+    known = ", ".join(f"{platform} {width}x{height}" for platform, (width, height) in _LAYOUT_PROFILES)
+    raise RuntimeError(f"No calibrated UI layout for {profile[0]} {profile[1][0]}x{profile[1][1]}; known: {known}")

@@ -5,6 +5,7 @@ the source of truth for OCR tuning; replay code can recrop them repeatedly.
 """
 import argparse
 import logging
+import sys
 import time
 from pathlib import Path
 
@@ -19,6 +20,8 @@ from profiles.fingerprints import current_screen
 from profiles.ui_layout import get_layout, require_field
 
 log = logging.getLogger(__name__)
+
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "captures"
 
 
 def _save(run, hwnd, layout, name, kind, ship_index, sequence=0):
@@ -77,6 +80,7 @@ def capture_all_flagships(hwnd, output: Path) -> Path:
     click(hwnd, *layout.first_card_click)
     time.sleep(0.6)
 
+    seen_names: set[str] = set()
     for ship_index in range(MAX_SHIPS):
         _save(run, hwnd, layout, "overview", "overview", ship_index)
         name = paddle_ocr.read_text(screenshot_region(hwnd, layout.name_box))
@@ -86,6 +90,10 @@ def capture_all_flagships(hwnd, output: Path) -> Path:
         if not name:
             log.warning("Ship %d has no readable name; stopping capture", ship_index)
             break
+        if name in seen_names:
+            log.debug("Ship name %r already seen - wrapped around fleet list", name)
+            break
+        seen_names.add(name)
 
         click(hwnd, *layout.overview_tab)
         time.sleep(0.6)
@@ -116,17 +124,35 @@ def capture_all_flagships(hwnd, output: Path) -> Path:
         click(hwnd, *layout.right_arrow)
         time.sleep(0.6)
 
-    run.write_manifest(platform=__import__("sys").platform, profile=list(get_layout(hwnd).__class__.__name__))
+    if not run.frames:
+        raise RuntimeError("Capture produced no frames")
+    run.write_manifest(
+        platform=sys.platform,
+        window_size=[run.frames[0]["width"], run.frames[0]["height"]],
+    )
     return run.root / "manifest.json"
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("output", type=Path)
+    parser = argparse.ArgumentParser(
+        description=(
+            "Capture every owned flagship's screens (overview, attribute details, "
+            "components, promotion) as full-window PNG frames plus a manifest, for "
+            "offline OCR replay via replay_all_flagships.py. Navigation and input "
+            "only - no OCR happens during capture."
+        ),
+    )
+    parser.add_argument(
+        "output", type=Path, nargs="?", default=None,
+        help=f"directory to write the capture run to (default: {DATA_DIR}/<timestamp>)",
+    )
     args = parser.parse_args()
+    output = args.output or DATA_DIR / time.strftime("%Y%m%d-%H%M%S")
     configure_logging()
     hwnd = find_window()
-    log.info("Capture manifest: %s", capture_all_flagships(hwnd, args.output))
+    start = time.monotonic()
+    manifest = capture_all_flagships(hwnd, output)
+    log.info("Capture manifest: %s (%.1fs)", manifest, time.monotonic() - start)
 
 
 if __name__ == "__main__":

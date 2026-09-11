@@ -32,6 +32,13 @@ def _get_model():
     if _model is None:
         log.info("Loading PaddleOCR text recognition model (first use - a few seconds)")
         from paddlex import create_model
+        # paddlex's own __init__ calls setup_logging() at import time, which
+        # sets its "paddlex" logger to INFO regardless of this app's own
+        # logging config - must be quieted after the import, not before, or
+        # this line has no effect (see setup_logging()'s unconditional
+        # logger.setLevel(INFO) call). Silences its noisy per-call "Creating
+        # model: (...)" / "Model files already exist..." INFO lines.
+        logging.getLogger("paddlex").setLevel(logging.WARNING)
         _model = create_model(model_name="en_PP-OCRv4_mobile_rec")
     return _model
 

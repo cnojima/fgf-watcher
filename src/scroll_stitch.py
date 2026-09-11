@@ -59,36 +59,61 @@ def content_offset(prev_img: Image.Image, curr_img: Image.Image, static_header_h
     return best_offset
 
 
-def stitch_scrolled_region(
-    hwnd, box: tuple[int, int, int, int], drag_from: tuple[int, int], drag_to: tuple[int, int],
-    expected_offset: int, static_header_height: int = 0, max_scrolls: int = 45, settle_time: float = 0.7,
+def stitch_frames(
+    frames: list[Image.Image], static_header_height: int, expected_offset: int,
 ) -> Image.Image:
-    """Scrolls `box` via drag(drag_from -> drag_to) up to max_scrolls times,
-    splicing only the genuinely new bottom slice of each capture (per
-    content_offset) onto one growing composite, until scrolling stalls
-    (content stops moving - assumed to mean the true bottom was reached)."""
-    from capture import screenshot_region
+    """Stitches a sequence of already-captured, already-cropped-to-the-same-
+    scrollable-box frames into one seamless composite - the pure half of
+    stitch_scrolled_region below, split out so offline replay can feed it
+    frames loaded from disk instead of live drag-captured ones. Every frame
+    must depict the same box; a full-window frame passed here instead of a
+    box-cropped one will silently produce a garbled composite (wrong width/
+    height for that slice), so callers own cropping before calling this.
 
-    frame = screenshot_region(hwnd, box)
-    parts = [frame]
-
-    for i in range(max_scrolls):
-        drag(hwnd, *drag_from, *drag_to)
-        time.sleep(settle_time)  # let scroll momentum/animation fully settle before capturing
-        next_frame = screenshot_region(hwnd, box)
-        offset = content_offset(frame, next_frame, static_header_height, expected_offset)
-        log.debug("Scroll %d/%d: offset=%dpx", i + 1, max_scrolls, offset)
+    Splices only each frame's genuinely new bottom slice (per content_offset)
+    onto the composite, stopping at the first frame whose content didn't move
+    - assumed to mean the true scroll bottom was reached (or, for a replay of
+    a live run's saved frames, that the live capture already stopped there)."""
+    if not frames:
+        raise ValueError("stitch_frames requires at least one frame")
+    parts = [frames[0]]
+    previous = frames[0]
+    for current in frames[1:]:
+        offset = content_offset(previous, current, static_header_height, expected_offset)
         if offset <= 5:
-            log.debug("Reached scroll bottom after %d scroll(s)", i + 1)
             break
-        parts.append(next_frame.crop((0, frame.height - offset, next_frame.width, next_frame.height)))
-        frame = next_frame
-    else:
-        log.warning("Hit max_scrolls (%d) without detecting a stall - composite may be incomplete", max_scrolls)
+        parts.append(current.crop((0, previous.height - offset, current.width, current.height)))
+        previous = current
 
-    composite = Image.new("RGB", (frame.width, sum(p.height for p in parts)))
+    composite = Image.new("RGB", (parts[0].width, sum(p.height for p in parts)))
     y = 0
     for part in parts:
         composite.paste(part, (0, y))
         y += part.height
     return composite
+
+
+def stitch_scrolled_region(
+    hwnd, box: tuple[int, int, int, int], drag_from: tuple[int, int], drag_to: tuple[int, int],
+    expected_offset: int, static_header_height: int = 0, max_scrolls: int = 45, settle_time: float = 0.7,
+) -> Image.Image:
+    """Scrolls `box` via drag(drag_from -> drag_to) up to max_scrolls times,
+    capturing one already-box-cropped frame per scroll, then hands the whole
+    sequence to stitch_frames (see there for the actual splicing logic)."""
+    from capture import screenshot_region
+
+    frames = [screenshot_region(hwnd, box)]
+    for i in range(max_scrolls):
+        drag(hwnd, *drag_from, *drag_to)
+        time.sleep(settle_time)  # let scroll momentum/animation fully settle before capturing
+        next_frame = screenshot_region(hwnd, box)
+        offset = content_offset(frames[-1], next_frame, static_header_height, expected_offset)
+        log.debug("Scroll %d/%d: offset=%dpx", i + 1, max_scrolls, offset)
+        frames.append(next_frame)
+        if offset <= 5:
+            log.debug("Reached scroll bottom after %d scroll(s)", i + 1)
+            break
+    else:
+        log.warning("Hit max_scrolls (%d) without detecting a stall - composite may be incomplete", max_scrolls)
+
+    return stitch_frames(frames, static_header_height, expected_offset)
