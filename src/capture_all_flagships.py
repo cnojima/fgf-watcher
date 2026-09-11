@@ -18,6 +18,7 @@ from logging_setup import configure_logging
 from nav import back, goto
 from profiles.fingerprints import current_screen
 from profiles.ui_layout import get_layout, require_field
+from scroll_stitch import capture_scroll_sequence
 
 log = logging.getLogger(__name__)
 
@@ -40,26 +41,11 @@ def _capture_attribute_frames(run, hwnd, layout, ship_index):
     click(hwnd, *layout.details_tab)
     time.sleep(0.2)
 
-    for sequence in range(46):
-        _save(run, hwnd, layout, "attribute", "attribute", ship_index, sequence)
-        if sequence == 45:
-            log.warning("Attribute capture reached maximum frame count")
-            break
-        from scroll_stitch import content_offset
-
-        before = screenshot_region(hwnd, layout.table_box)
-        # The next screenshot is saved before measuring movement, so the
-        # replay has exactly the same frames as the live run.
-        from input_control import drag
-        drag(hwnd, *layout.drag_from, *layout.drag_to)
-        time.sleep(0.7)
-        after = screenshot_region(hwnd, layout.table_box)
-        offset = content_offset(
-            before, after, layout.table_tab_bar_height,
-            layout.expected_scroll_offset,
-        )
-        if offset <= 5:
-            break
+    capture_scroll_sequence(
+        lambda sequence: _save(run, hwnd, layout, "attribute", "attribute", ship_index, sequence),
+        hwnd, layout.table_box, layout.drag_from, layout.drag_to,
+        layout.expected_scroll_offset, static_header_height=layout.table_tab_bar_height, max_scrolls=45,
+    )
 
     press_key(hwnd, "esc")
     time.sleep(0.2)

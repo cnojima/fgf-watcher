@@ -43,6 +43,43 @@ def goto_champion_grid(hwnd) -> None:
     time.sleep(0.8)
 
 
+def on_grid(hwnd, layout: ChampionLayout) -> bool:
+    # ChampionLayout.grid_title_box: the grid screen's fixed "CHAMPION"
+    # title - used as a sync-check after closing a card, so a failure to
+    # fully close (confirmed possible live - see
+    # champion_weapon.close_weapon_page's docstring for how one such
+    # failure cascaded into misreading unrelated screens for several
+    # subsequent champions in a batch run before this check existed) is
+    # caught and recovered from immediately, rather than silently
+    # corrupting every champion collected afterward.
+    box = require_field(layout.grid_title_box, "grid_title_box")
+    return "champion" in paddle_ocr.read_text(screenshot_region(hwnd, box)).lower()
+
+
+def recover_to_grid(hwnd, layout: ChampionLayout) -> None:
+    """Best-effort recovery when we're not where we expect to be - press
+    back() a bounded number of times, then fall back to re-navigating from
+    the grid icon directly (works regardless of how deep the stuck state
+    is, since it doesn't depend on back() actually working from there)."""
+    log.warning("Not on the grid screen where expected - attempting recovery")
+    for _ in range(4):
+        if on_grid(hwnd, layout):
+            return
+        back(hwnd)
+        time.sleep(0.5)
+    goto_champion_grid(hwnd)
+    if not on_grid(hwnd, layout):
+        raise RuntimeError("Could not recover to the champion grid after a navigation failure")
+
+
+def classify_card_state(text: str) -> str:
+    """Pure classification of a grid card's status-text OCR - see
+    _card_state below for what each outcome means."""
+    if not text:
+        return "empty"
+    return "locked" if "/" in text else "unlocked"
+
+
 def _card_state(hwnd, layout: ChampionLayout, col: int, row: int) -> str:
     """Returns "unlocked", "locked", or "empty" - the last one covers both
     a genuinely blank grid cell and a card OCR couldn't read any digits
@@ -66,10 +103,7 @@ def _card_state(hwnd, layout: ChampionLayout, col: int, row: int) -> str:
     l, t, r, b = require_field(layout.card_status_offset, "card_status_offset")
     box = (cx + l, cy + t, cx + r, cy + b)
     img = screenshot_region(hwnd, box)
-    text = paddle_ocr.read_text(img)
-    if not text:
-        return "empty"
-    return "locked" if "/" in text else "unlocked"
+    return classify_card_state(paddle_ocr.read_text(img))
 
 
 def enumerate_grid(hwnd, layout: ChampionLayout) -> list[tuple[int, int]]:

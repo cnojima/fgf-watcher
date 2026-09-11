@@ -91,11 +91,9 @@ def _nearest_tier(color: np.ndarray) -> int:
     return int(best.removeprefix("tier"))
 
 
-def read_star_level(hwnd, layout: ChampionLayout) -> int:
-    """Assumes a champion's detail view is currently showing, any tab
-    active (the pip strip is part of the shared header, visible on all
-    three tabs)."""
-    img = screenshot_region(hwnd, layout.star_level_pips_box)
+def classify_star_level(img: Image.Image) -> int:
+    """Pure classification of an already-cropped 5-pip strip image into a
+    star level (0-30) - shared by the live reader below and offline replay."""
     w = img.width
     pip_colors = []
     for i in range(5):
@@ -113,3 +111,10 @@ def read_star_level(hwnd, layout: ChampionLayout) -> int:
     level = (leftmost - 1) * 5 + run
     log.info("Star level: %d (tiers=%s)", level, tiers)
     return level
+
+
+def read_star_level(hwnd, layout: ChampionLayout) -> int:
+    """Assumes a champion's detail view is currently showing, any tab
+    active (the pip strip is part of the shared header, visible on all
+    three tabs)."""
+    return classify_star_level(screenshot_region(hwnd, layout.star_level_pips_box))

@@ -169,6 +169,30 @@ Windows: run the capture step via `run_admin.ps1` like `collect_all_flagships.py
   `replay_all_flagships.py` against the same capture directory and diff the
   new `results.json` against the previous one.
 
+## 5. `capture_all_champions.py` + `replay_all_champions.py` — same split, for champions
+
+Same two-phase capture/replay split as section 4, for `collect_all_champions.py`'s
+flow instead: navigate the champion collection grid, open every unlocked
+champion, and capture Info/Attributes/Weapon (if equipped)/Ability screens as
+full-window frames; replay reads OCR from those saved frames only.
+
+```
+python src/capture_all_champions.py data/champion_captures/my-capture
+python src/replay_all_champions.py data/champion_captures/my-capture --output data/champion_captures/my-capture/replay-v1
+```
+
+Windows/macOS elevation rules are the same as section 4. This flow has more
+scroll-stitched regions per entity than flagships - besides the weapon stats
+list, all 7 ability icons (3 Space Combat, Ultimate, 3 Ground Combat) each
+have their own independently-scrollable description, so a champion with a
+weapon equipped can produce 60+ frames on its own. Frame kinds per champion:
+`info`, `attribute-space`, `attribute-ground`, and if a weapon is equipped
+`weapon`, `weapon-stats` (scroll sequence), `weapon-bonus-space_combat`/
+`weapon-bonus-ground_combat` (only where `weapon_bonus_info_box` is
+calibrated), plus `ability-<slot>` (scroll sequence) for each of the 7
+ability slots. `results.json`'s shape mirrors `collect_all_champions.py`'s
+own per-champion output (`info`/`star_level`/`attributes`/`weapon`/`abilities`).
+
 ## Troubleshooting: "No game window matching '...' found"
 
 Means the window-title substring search came up empty at the moment the tool

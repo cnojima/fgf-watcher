@@ -69,6 +69,19 @@ _NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z\s'-]*$")
 _FINGERPRINT_TOLERANCE = 25
 
 
+def _point_matches(img, x: int, y: int, expected: tuple[int, int, int]) -> bool:
+    pixel = img.getpixel((x, y))
+    return all(abs(pixel[i] - expected[i]) <= _FINGERPRINT_TOLERANCE for i in range(3))
+
+
+def matches_empty_fingerprint(img, variants) -> bool:
+    """Pure check of the weapon badge's pixel fingerprint against an
+    already-captured image - shared by has_weapon_equipped below and
+    offline replay. See has_weapon_equipped's docstring for why this is
+    "no variant fully matched", not "any single point differed"."""
+    return not any(all(_point_matches(img, x, y, expected) for x, y, expected in variant) for variant in variants)
+
+
 def has_weapon_equipped(hwnd, layout: ChampionLayout) -> bool:
     """Assumes the champion's Info tab is currently showing. Checks the
     weapon badge's pixel fingerprint WITHOUT clicking it - the "+"
@@ -89,13 +102,14 @@ def has_weapon_equipped(hwnd, layout: ChampionLayout) -> bool:
     at least one known variant line up."""
     img = screenshot_window(hwnd)
     variants = require_field(layout.weapon_badge_empty_fingerprint, "weapon_badge_empty_fingerprint")
-    for variant in variants:
-        if all(
-            all(abs(img.getpixel((x, y))[i] - expected[i]) <= _FINGERPRINT_TOLERANCE for i in range(3))
-            for x, y, expected in variant
-        ):
-            return False
-    return True
+    return matches_empty_fingerprint(img, variants)
+
+
+def matches_maxed_fingerprint(img, fingerprint) -> bool:
+    """Pure check of the "MAX-LEVEL PREVIEW" button's pixel fingerprint
+    against an already-captured image - shared by is_weapon_maxed below
+    and offline replay."""
+    return all(_point_matches(img, x, y, expected) for x, y, expected in fingerprint)
 
 
 def is_weapon_maxed(hwnd, layout: ChampionLayout) -> bool:
@@ -110,10 +124,7 @@ def is_weapon_maxed(hwnd, layout: ChampionLayout) -> bool:
     profiles/fingerprints.py's current_screen()."""
     img = screenshot_window(hwnd)
     fingerprint = require_field(layout.weapon_maxed_fingerprint, "weapon_maxed_fingerprint")
-    return all(
-        all(abs(img.getpixel((x, y))[i] - expected[i]) <= _FINGERPRINT_TOLERANCE for i in range(3))
-        for x, y, expected in fingerprint
-    )
+    return matches_maxed_fingerprint(img, fingerprint)
 
 
 def _find_keyword(text: str, vocabulary: tuple[str, ...]) -> str | None:
@@ -158,6 +169,17 @@ def _join_wrapped_lines(text: str) -> list[str]:
     return joined
 
 
+def parse_weapon_stats(text: str) -> dict[str, str]:
+    """Pure parse of the weapon stats list's OCR text - shared by the live
+    reader below and offline replay."""
+    stats = {}
+    for line in _join_wrapped_lines(text):
+        m = _STAT_LINE.match(_clean_leading_noise(line))
+        if m:
+            stats[m.group(1).strip()] = m.group(2)
+    return stats
+
+
 def _read_stats(hwnd, layout: ChampionLayout) -> dict[str, str]:
     # The stats list (9 rows: POWER, Kinetic DMG Advantage Boost, 3x
     # Formation bonuses, 4x Champion stats) doesn't fit in
@@ -171,16 +193,10 @@ def _read_stats(hwnd, layout: ChampionLayout) -> dict[str, str]:
         require_field(layout.weapon_stats_drag_to, "weapon_stats_drag_to"),
         layout.weapon_stats_expected_scroll_offset, max_scrolls=10,
     )
-    text = paddle_ocr_blocks.read_text_block(composite)
-    stats = {}
-    for line in _join_wrapped_lines(text):
-        m = _STAT_LINE.match(_clean_leading_noise(line))
-        if m:
-            stats[m.group(1).strip()] = m.group(2)
-    return stats
+    return parse_weapon_stats(paddle_ocr_blocks.read_text_block(composite))
 
 
-_BONUS_SLOTS = ("space_combat", "ground_combat")
+BONUS_SLOTS = ("space_combat", "ground_combat")
 
 
 def _read_bonuses(hwnd, layout: ChampionLayout) -> dict[str, str]:
@@ -204,7 +220,7 @@ def _read_bonuses(hwnd, layout: ChampionLayout) -> dict[str, str]:
     bonuses = {}
     icons = require_field(layout.weapon_bonus_icons, "weapon_bonus_icons")
     info_box = layout.weapon_bonus_info_box
-    for slot, (x, y) in zip(_BONUS_SLOTS, icons):
+    for slot, (x, y) in zip(BONUS_SLOTS, icons):
         click(hwnd, x, y)
         time.sleep(0.4)
         img = screenshot_region(hwnd, info_box)

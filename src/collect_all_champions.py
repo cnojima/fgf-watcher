@@ -17,55 +17,16 @@ from champion_attributes import read_attributes
 from champion_info import read_info
 from champion_star_level import read_star_level
 from champion_weapon import close_weapon_page, has_weapon_equipped, read_weapon
-from champions import close_card, enumerate_grid, goto_champion_grid, open_card
+from champions import close_card, enumerate_grid, goto_champion_grid, on_grid, open_card, recover_to_grid
 from input_control import click, focus_window
 from logging_setup import configure_logging
 from nav import back
-from profiles.champion_layout import ChampionLayout, get_champion_layout
+from profiles.champion_layout import get_champion_layout
 from profiles.fingerprints import current_screen
 
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "champions"
-
-# Grid screen's fixed "CHAMPION" title - used as a sync-check after
-# closing a card, so a failure to fully close (confirmed possible live -
-# see champion_weapon.close_weapon_page's docstring for how one such
-# failure cascaded into misreading unrelated screens for several
-# subsequent champions in a batch run before this check existed) is caught
-# and recovered from immediately, rather than silently corrupting every
-# champion collected afterward.
-#
-# Confirmed live this was simply wrong at this window size - the original
-# (580,40,700,66) crops blank background nowhere near the actual title, not
-# a transient timing miss. Because _on_grid() is called after every single
-# champion, this meant _recover_to_grid()'s back()-mashing loop ran on
-# every champion regardless of whether the close actually worked, and
-# happened to survive by luck until it didn't (confirmed live: the grid was
-# genuinely already open - visually confirmed via a fresh screenshot at the
-# moment recovery gave up and raised). Re-measured via a clean tight zoom on
-# a live "CHAMPION" title read.
-_GRID_TITLE_BOX = (1150, 10, 1400, 75)
-
-
-def _on_grid(hwnd) -> bool:
-    return "champion" in paddle_ocr.read_text(screenshot_region(hwnd, _GRID_TITLE_BOX)).lower()
-
-
-def _recover_to_grid(hwnd, layout: ChampionLayout) -> None:
-    """Best-effort recovery when we're not where we expect to be - press
-    back() a bounded number of times, then fall back to re-navigating from
-    the grid icon directly (works regardless of how deep the stuck state
-    is, since it doesn't depend on back() actually working from there)."""
-    log.warning("Not on the grid screen where expected - attempting recovery")
-    for _ in range(4):
-        if _on_grid(hwnd):
-            return
-        back(hwnd)
-        time.sleep(0.5)
-    goto_champion_grid(hwnd)
-    if not _on_grid(hwnd):
-        raise RuntimeError("Could not recover to the champion grid after a navigation failure")
 
 
 def collect_champion(hwnd, layout) -> dict:
@@ -156,8 +117,8 @@ def collect_all_champions(hwnd) -> dict[str, dict]:
         results[name] = data
 
         close_card(hwnd)
-        if not _on_grid(hwnd):
-            _recover_to_grid(hwnd, layout)
+        if not on_grid(hwnd, layout):
+            recover_to_grid(hwnd, layout)
 
     log.info("Finished champion collection: %d champion(s)", len(results))
     return results

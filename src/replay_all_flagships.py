@@ -1,7 +1,5 @@
 """Replay a flagship capture directory without accessing the game window."""
 import argparse
-import hashlib
-import json
 import logging
 from pathlib import Path
 
@@ -16,33 +14,13 @@ import promotion_badge_ocr
 import promotion_details
 from icon_match import match_icon
 from profiles.ui_layout import get_layout_for_profile
+from replay_common import crop as _crop
+from replay_common import load_frame as _load_frame
+from replay_common import load_manifest as _load_manifest
+from replay_common import write_json as _write_json
 from scroll_stitch import stitch_frames
 
 log = logging.getLogger(__name__)
-
-
-def _load_manifest(root: Path) -> dict:
-    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
-    if manifest.get("version") != 1:
-        raise RuntimeError(f"Unsupported capture manifest version: {manifest.get('version')!r}")
-    return manifest
-
-
-def _load_frame(root: Path, entry: dict) -> Image.Image:
-    path = root / entry["path"]
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    if digest != entry["sha256"]:
-        raise RuntimeError(f"Capture frame changed: {path}")
-    return Image.open(path).convert("RGB")
-
-
-def _crop(image: Image.Image, box) -> Image.Image:
-    return image.crop(box)
-
-
-def _write_json(path: Path, value) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
 
 
 def _read_component(image: Image.Image, layout) -> dict:

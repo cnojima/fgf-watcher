@@ -21,15 +21,20 @@ log = logging.getLogger(__name__)
 _ROW_LINE = re.compile(r"^(.+?)\s+([+\-]?[\d][\d,\.]*%?)$")
 
 
-def _read_flat_list(hwnd, layout: ChampionLayout) -> dict[str, str]:
-    img = screenshot_region(hwnd, layout.attribute_modal_box)
-    text = paddle_ocr_blocks.read_text_block(img)
+def parse_flat_list(text: str) -> dict[str, str]:
+    """Pure parse of a flat attribute list's OCR text - shared by the live
+    reader below and offline replay."""
     rows = {}
     for line in text.splitlines():
         m = _ROW_LINE.match(line.strip())
         if m:
             rows[m.group(1).strip()] = m.group(2)
     return rows
+
+
+def _read_flat_list(hwnd, layout: ChampionLayout) -> dict[str, str]:
+    img = screenshot_region(hwnd, layout.attribute_modal_box)
+    return parse_flat_list(paddle_ocr_blocks.read_text_block(img))
 
 
 def read_attributes(hwnd, layout: ChampionLayout) -> dict[str, dict[str, str]]:

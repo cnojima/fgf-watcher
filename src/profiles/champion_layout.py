@@ -109,6 +109,15 @@ class ChampionLayout:
     # star pips, no slash) - see champions.py._card_state.
     card_status_offset: tuple[int, int, int, int] | None = None
 
+    # Grid screen's "CHAMPION" title box - see champions.on_grid. Was
+    # previously a single flat module constant shared across every profile
+    # regardless of platform/window size (confirmed broken live on darwin
+    # (1280, 828): the stale value's x1=1400 exceeds that window's own
+    # width, so it could never have landed on real content there) - moved
+    # here so it's calibrated per profile like every other coordinate in
+    # this file, instead of silently assuming one window size fits all.
+    grid_title_box: tuple[int, int, int, int] | None = None
+
     # Pixel-color fingerprint VARIANTS for the "+" no-weapon-equipped
     # placeholder (each a tuple of (x, y, expected RGB) points; a badge
     # matches "empty" if ALL points of ANY ONE variant line up) - checked
@@ -160,6 +169,13 @@ _CHAMPION_LAYOUT_PROFILES: dict[ProfileKey, ChampionLayout] = {
         grid_columns=(433, 537, 640, 743, 845),
         grid_rows=(175, 365, 555, 695),
         card_status_offset=(-45, 63, 47, 83),
+        # Confirmed via calibrate.py zoom against a live grid screenshot,
+        # then cross-checked by cropping data/calibration_raw.png at this
+        # exact box and OCR'ing it directly - reads clean "CHAMPION". The
+        # previous flat-constant value (1150, 10, 1400, 75) had x1=1400,
+        # past this window's own 1280px width - could never have landed on
+        # real content here (see this field's docstring above).
+        grid_title_box=(580, 30, 710, 70),
         name_box=(433, 42, 700, 68),
         title_box=(433, 70, 600, 90),
         quality_box=(800, 68, 930, 90),
@@ -416,3 +432,15 @@ _CHAMPION_LAYOUT_PROFILES: dict[ProfileKey, ChampionLayout] = {
 
 def get_champion_layout(hwnd) -> ChampionLayout:
     return select_profile(hwnd, _CHAMPION_LAYOUT_PROFILES, "champion UI layout")
+
+
+def get_champion_layout_for_profile(profile: ProfileKey) -> ChampionLayout:
+    """Return calibrated coordinates without requiring a live game window -
+    same convention as ui_layout.get_layout_for_profile, for offline replay."""
+    if profile in _CHAMPION_LAYOUT_PROFILES:
+        return _CHAMPION_LAYOUT_PROFILES[profile]
+    fallback = (profile[0], (0, 0))
+    if fallback in _CHAMPION_LAYOUT_PROFILES:
+        return _CHAMPION_LAYOUT_PROFILES[fallback]
+    known = ", ".join(f"{platform} {width}x{height}" for platform, (width, height) in _CHAMPION_LAYOUT_PROFILES)
+    raise RuntimeError(f"No calibrated champion UI layout for {profile[0]} {profile[1][0]}x{profile[1][1]}; known: {known}")

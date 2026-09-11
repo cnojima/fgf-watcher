@@ -34,7 +34,7 @@ from scroll_stitch import stitch_scrolled_region
 
 log = logging.getLogger(__name__)
 
-_ABILITY_SLOTS = ("space_1", "space_2", "space_3", "ultimate", "ground_1", "ground_2", "ground_3")
+ABILITY_SLOTS = ("space_1", "space_2", "space_3", "ultimate", "ground_1", "ground_2", "ground_3")
 
 
 def _ocr_multiline(img) -> str:
@@ -54,7 +54,7 @@ def read_abilities(hwnd, layout: ChampionLayout) -> dict[str, str]:
     """Assumes the champion's Ability tab is currently showing. Clicks each
     of the 7 ability icons in turn and returns {slot_name: full_card_text}."""
     abilities = {}
-    for slot, (x, y) in zip(_ABILITY_SLOTS, layout.ability_icons):
+    for slot, (x, y) in zip(ABILITY_SLOTS, layout.ability_icons):
         click(hwnd, x, y)
         time.sleep(0.4)
         abilities[slot] = _read_ability_card(hwnd, layout)

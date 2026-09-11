@@ -93,6 +93,44 @@ def stitch_frames(
     return composite
 
 
+def capture_scroll_sequence(
+    save_frame, hwnd, box: tuple[int, int, int, int], drag_from: tuple[int, int], drag_to: tuple[int, int],
+    expected_offset: int, static_header_height: int = 0, max_scrolls: int = 45, settle_time: float = 0.7,
+) -> None:
+    """Drives the same scroll-and-measure loop as stitch_scrolled_region
+    below, but calls save_frame(sequence) once per step instead of
+    stitching immediately - for capture scripts that need to persist each
+    raw frame (typically a full-window screenshot, wider than `box` itself)
+    for later offline replay, rather than get a composite back right away.
+    sequence is 0, 1, 2, ... in capture order; save_frame owns however it
+    wants to name/store that frame.
+
+    Movement is measured from `box` (via content_offset), which can be
+    narrower than whatever save_frame itself captures - the two are
+    independent. Stops on the same "content stopped moving" or max_scrolls
+    condition stitch_scrolled_region uses, so a caller that later crops
+    these saved frames back down to `box` and feeds them to stitch_frames
+    gets the identical composite a live stitch_scrolled_region call would
+    have produced from the same screen."""
+    from capture import screenshot_region
+
+    frame = screenshot_region(hwnd, box)
+    for i in range(max_scrolls + 1):
+        save_frame(i)
+        if i == max_scrolls:
+            log.warning("Scroll capture reached maximum frame count (%d)", max_scrolls)
+            break
+        drag(hwnd, *drag_from, *drag_to)
+        time.sleep(settle_time)  # let scroll momentum/animation fully settle before capturing
+        next_frame = screenshot_region(hwnd, box)
+        offset = content_offset(frame, next_frame, static_header_height, expected_offset)
+        log.debug("Scroll %d/%d: offset=%dpx", i + 1, max_scrolls, offset)
+        frame = next_frame
+        if offset <= 5:
+            log.debug("Reached scroll bottom after %d scroll(s)", i + 1)
+            break
+
+
 def stitch_scrolled_region(
     hwnd, box: tuple[int, int, int, int], drag_from: tuple[int, int], drag_to: tuple[int, int],
     expected_offset: int, static_header_height: int = 0, max_scrolls: int = 45, settle_time: float = 0.7,
