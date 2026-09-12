@@ -234,13 +234,23 @@ _CHAMPION_LAYOUT_PROFILES: dict[ProfileKey, ChampionLayout] = {
         level_box=(605, 622, 675, 662),  # digits only - excludes the "Level" label line above (see champion_info._read_level)
         power_box=(600, 668, 700, 690),
         weapon_badge_click=(400, 195),
-        # Only one variant confirmed on darwin so far (see this field's own
-        # comment above for why win32 needed more than one) - Lucius
-        # Pullo's ring read this same teal regardless of point. Not yet
-        # tested against an EPIC-quality champion's empty badge here the
-        # way win32's Klara case was; if one turns up reading a different
-        # color, add it as a second variant the same way win32 did.
-        weapon_badge_empty_fingerprint=(((378, 195, (61, 103, 88)), (422, 195, (61, 103, 90))),),
+        # Second variant added after the single teal one below produced a
+        # real false-negative live: Doug Rockwell owns no weapon on this
+        # account, but has_weapon_equipped() read his badge as equipped
+        # (matched neither variant) and clicked into the "+" placeholder
+        # anyway, corrupting his capture (garbled name/stats read from
+        # whatever page that click actually landed on) - per explicit
+        # instruction that placeholder must never be clicked. Confirmed by
+        # reading Doug's actual info-000.png frame at these exact points
+        # ((122,118,84)/(123,119,84)) - a warm-gold LEGENDARY-tier tint,
+        # same root cause as win32's Doug/Klara split (see win32's
+        # weapon_badge_empty_fingerprint comment) - and cross-checked
+        # against all 16 captured champions in the same run to confirm it
+        # only matches Doug's own badge, not any equipped one.
+        weapon_badge_empty_fingerprint=(
+            ((378, 195, (61, 103, 88)), (422, 195, (61, 103, 90))),  # EPIC/teal (Lucius Pullo)
+            ((378, 195, (122, 118, 84)), (422, 195, (123, 119, 84))),  # LEGENDARY (Doug Rockwell)
+        ),
         hamburger_icon=(822, 722),
         space_combat_tab=(537, 227),
         ground_combat_tab=(742, 227),

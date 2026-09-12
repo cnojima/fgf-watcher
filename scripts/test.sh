@@ -8,4 +8,5 @@ source .venv/bin/activate
 CAPTURE_DIR=data/captures/20260911-082553
 OUTPUT_DIR=$CAPTURE_DIR/output
 
-python src/replay_all_flagships.py --output $OUTPUT_DIR $CAPTURE_DIR
+# python src/replay_all_flagships.py --output $OUTPUT_DIR $CAPTURE_DIR
+python src/replay_all_champions.py --output $OUTPUT_DIR data/champion_captures/20260911-111457

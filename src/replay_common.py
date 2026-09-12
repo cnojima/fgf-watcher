@@ -32,4 +32,8 @@ def crop(image: Image.Image, box) -> Image.Image:
 
 def write_json(path: Path, value) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+    # ensure_ascii=False - ability/bonus text is full of legitimate non-ASCII
+    # glyphs read straight off the game's UI (the "×" multiplication
+    # sign in e.g. "Formation INT × 300%"), which the default escapes into
+    # unreadable \uXXXX sequences throughout every ability description.
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

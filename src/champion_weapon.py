@@ -66,6 +66,17 @@ _TYPES = ("attack", "defense", "support", "healing")
 # mispositioned content.
 _NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z\s'-]*$")
 
+
+def _normalize_weapon_name(name: str) -> str:
+    """A weapon's name is always rendered as "<Name>-<Category>" with no
+    space on either side of the dash (e.g. "RADIANT AURORA-PISTOL") - but
+    OCR occasionally inserts a stray space before it ("ENDLESS WHISPER
+    -ENERGY CANNON", "PARTICLE STORM -ENERGY CANNON"), confirmed live
+    across a real roster capture. Collapsing any whitespace around the dash
+    is safe regardless of which side OCR added it to, and a no-op on names
+    that already read correctly."""
+    return re.sub(r"\s*-\s*", "-", name)
+
 _FINGERPRINT_TOLERANCE = 25
 
 
@@ -252,6 +263,7 @@ def read_weapon(hwnd, layout: ChampionLayout) -> dict:
         name = paddle_ocr.read_text(screenshot_region(hwnd, name_box))
     if not name:
         log.warning("weapon_name_box read empty even after retry - proceeding with an empty name")
+    name = _normalize_weapon_name(name)
 
     badge_box = require_field(layout.weapon_element_type_box, "weapon_element_type_box")
     badge_text = paddle_ocr.read_text(screenshot_region(hwnd, badge_box))

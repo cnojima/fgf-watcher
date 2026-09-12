@@ -42,6 +42,31 @@ log = logging.getLogger(__name__)
 # longer needs perfect text, just something close enough to one of these.
 _QUALITIES = ("legendary", "epic")
 
+# name_box's stylized condensed font (see the docstring on read_info's `name`
+# line) hallucinates trailing garbage past the real text and drops spaces
+# between words often enough that raw OCR output can't be trusted as-is -
+# confirmed live across a real roster capture, and confirmed NOT a cropping
+# bug first (per CLAUDE.md's "capture evidence before tuning" bar - every
+# crop behind these reads was visibly clean and correctly bounded):
+# "ZORADOMINI" (dropped space), "LILY-" (hallucinated trailing dash, and a
+# stray lowercase letter mid-word), "KILLER BEE ." / "COCOONTTO" (trailing
+# noise/repeats), "JODIE BEARTA" (extra trailing letter, dropped accent).
+# Corrected by fuzzy-matching against a whitelist of names already confirmed
+# correct by the user - same closed-vocabulary approach as _match_quality
+# above and champion_weapon._find_keyword, except deliberately narrow (only
+# entries actually confirmed, not every name seen in a capture) per the
+# "don't invent unconfirmed data" precedent in attribute_details.py's
+# KNOWN_SUBROW_LABELS docstring. Grows one confirmed name at a time; any
+# name not yet in it just passes through unchanged (open vocabulary).
+_KNOWN_NAMES = ("ZORA DOMINI", "LILY", "KILLER BEE", "COCOON", "JODIE BEART")
+
+
+def _match_known_name(text: str) -> str:
+    if not text:
+        return text
+    match = difflib.get_close_matches(text.upper(), _KNOWN_NAMES, n=1, cutoff=0.75)
+    return match[0] if match else text
+
 
 def _read_level(hwnd, layout: ChampionLayout) -> int | None:
     # Both Tesseract and EasyOCR struggle with this octagon-badge font (see
@@ -90,7 +115,7 @@ def read_info(hwnd, layout: ChampionLayout) -> dict:
     # different real crop (a weapon title) without any fine-tuning; verify
     # against a real champion name/title crop before trusting this in
     # production, same as every other field migrated this session.
-    name = paddle_ocr.read_text(screenshot_region(hwnd, layout.name_box))
+    name = _match_known_name(paddle_ocr.read_text(screenshot_region(hwnd, layout.name_box)))
     title = paddle_ocr.read_text(screenshot_region(hwnd, layout.title_box))
     quality = _match_quality(paddle_ocr.read_text(screenshot_region(hwnd, layout.quality_box)))
     element = match_icon(screenshot_region(hwnd, layout.element_icon_box), "elements")

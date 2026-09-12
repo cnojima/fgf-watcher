@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 
 def _read_info(image: Image.Image, layout) -> dict:
-    name = paddle_ocr.read_text(crop(image, layout.name_box))
+    name = champion_info._match_known_name(paddle_ocr.read_text(crop(image, layout.name_box)))
     title = paddle_ocr.read_text(crop(image, layout.title_box))
     quality = champion_info._match_quality(paddle_ocr.read_text(crop(image, layout.quality_box)))
     element = match_icon(crop(image, layout.element_icon_box), "elements")
@@ -52,7 +52,7 @@ def _stitch_weapon_stats_frames(images: list[Image.Image], layout) -> Image.Imag
 
 def _read_weapon(weapon_image: Image.Image, stats_images: list[Image.Image], bonus_images: dict, layout) -> dict:
     name_box = require_field(layout.weapon_name_box, "weapon_name_box")
-    name = paddle_ocr.read_text(crop(weapon_image, name_box))
+    name = champion_weapon._normalize_weapon_name(paddle_ocr.read_text(crop(weapon_image, name_box)))
     badge_box = require_field(layout.weapon_element_type_box, "weapon_element_type_box")
     badge_text = paddle_ocr.read_text(crop(weapon_image, badge_box))
     element = champion_weapon._find_keyword(badge_text, champion_weapon._ELEMENTS)
